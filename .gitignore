@@ -221,3 +221,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+*.html
+
+# Local run reports (observability only)
+report/*
+!report/.gitkeep
