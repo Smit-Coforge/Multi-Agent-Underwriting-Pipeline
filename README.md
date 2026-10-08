@@ -47,6 +47,12 @@ The file under `report/` is observability, not working memory. Agents never read
 | risk | | R | R | W | |
 | recommendation | | R | R | R | W |
 
+## Data
+
+`data/applications/<case_id>.json` is the application: name, age, gender, occupation, annual income, coverage amount, term length, smoker / nicotine use, medical conditions, and existing life insurance.
+
+`data/enrichment/<case_id>.json` is the enrichment record for that person: prescription history, recent lab results, verified medical history, and a financial / coverage consistency check. The enrichment agent loads it by case id and appends those fields to the case, plus a one-sentence summary.
+
 ## How to run
 
 ```bash
@@ -55,11 +61,10 @@ pytest tests
 
 # live case (Ollama qwen3:8b on the host)
 python run.py C-001
-python run.py C-002
-python run.py C-003
+# C-002 through C-010
 ```
 
-Term life score is computed in code (tobacco, age, credit band, claims, face/income). The LLM only lists factors and writes the decision reason. Thresholds: `< 0.4` approve, `≤ 0.7` refer, else deny.
+Term life score is computed in code (tobacco, age, disclosed and severe conditions, history mismatch, lab flags, prescriptions, coverage consistency, face/income). The LLM only lists factors and writes the decision reason. Thresholds: `< 0.4` approve, `≤ 0.7` refer, else deny.
 
 If an agent raises (timeout, bad JSON), the wrapper retries 3 times then refers. Nothing is keyed off a special case id.
 

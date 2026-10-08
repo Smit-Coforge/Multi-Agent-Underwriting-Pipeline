@@ -1,0 +1,12 @@
+{
+  "name": "Evan Brooks",
+  "age": 36,
+  "gender": "male",
+  "occupation": "electrician",
+  "annual_income": 78000,
+  "coverage_amount": 500000,
+  "term_length_years": 20,
+  "smoker": false,
+  "medical_conditions": ["anxiety"],
+  "existing_life_insurance": 150000
+}

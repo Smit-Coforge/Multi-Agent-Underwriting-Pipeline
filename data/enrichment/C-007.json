@@ -1,0 +1,22 @@
+{
+  "prescription_history": [],
+  "recent_lab_results": {
+    "date": "2026-02-28",
+    "a1c": 5.2,
+    "systolic": 118,
+    "diastolic": 76,
+    "ldl": 102,
+    "flags": []
+  },
+  "verified_medical_history": {
+    "conditions": [],
+    "matches_application": true,
+    "notes": "No diagnoses on file."
+  },
+  "financial_coverage_check": {
+    "consistent": false,
+    "coverage_to_income": 17.19,
+    "existing_coverage_verified": 0,
+    "notes": "Requested face amount is far above stated income."
+  }
+}

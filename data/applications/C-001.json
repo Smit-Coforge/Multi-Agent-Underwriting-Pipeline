@@ -1,3 +1,12 @@
 {
-  "text": "Hi, I'm Alex Rivera, 34. I'd like $500k term life. I'm a non-smoker, I make about 85k. I had one small auto claim in 2021."
+  "name": "Alex Rivera",
+  "age": 34,
+  "gender": "female",
+  "occupation": "software engineer",
+  "annual_income": 85000,
+  "coverage_amount": 500000,
+  "term_length_years": 20,
+  "smoker": false,
+  "medical_conditions": [],
+  "existing_life_insurance": 0
 }

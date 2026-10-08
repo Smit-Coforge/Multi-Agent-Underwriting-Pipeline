@@ -1,0 +1,12 @@
+{
+  "name": "Samir Patel",
+  "age": 47,
+  "gender": "male",
+  "occupation": "accountant",
+  "annual_income": 95000,
+  "coverage_amount": 750000,
+  "term_length_years": 30,
+  "smoker": true,
+  "medical_conditions": ["hyperlipidemia"],
+  "existing_life_insurance": 0
+}

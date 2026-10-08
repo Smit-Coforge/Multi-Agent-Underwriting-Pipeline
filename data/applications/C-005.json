@@ -1,0 +1,12 @@
+{
+  "name": "Riley Chen",
+  "age": 29,
+  "gender": "female",
+  "occupation": "nurse",
+  "annual_income": 72000,
+  "coverage_amount": 400000,
+  "term_length_years": 30,
+  "smoker": false,
+  "medical_conditions": [],
+  "existing_life_insurance": 50000
+}

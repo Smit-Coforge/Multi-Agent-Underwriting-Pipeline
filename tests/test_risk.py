@@ -1,18 +1,15 @@
 from src.agents.risk import compute_term_life_score, risk_scoring_agent
 from src.llm import FakeLLM
+from src.tools.enrichment_lookup import lookup_enrichment
 from tests.conftest import ALEX, JORDAN
 
 ENRICHMENT_ALEX = {
-    "credit_band": "good",
-    "prior_claims": 1,
-    "high_value_flag": True,
-    "summary": "Good credit, one minor claim.",
+    **lookup_enrichment("C-001"),
+    "summary": "Clean labs and consistent coverage.",
 }
 ENRICHMENT_JORDAN = {
-    "credit_band": "poor",
-    "prior_claims": 3,
-    "high_value_flag": True,
-    "summary": "Poor credit, three claims.",
+    **lookup_enrichment("C-002"),
+    "summary": "Smoker with COPD, abnormal labs, coverage above income.",
 }
 
 

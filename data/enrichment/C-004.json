@@ -1,0 +1,24 @@
+{
+  "prescription_history": [
+    {"drug": "atorvastatin", "reason": "hyperlipidemia"}
+  ],
+  "recent_lab_results": {
+    "date": "2025-11-20",
+    "a1c": 5.4,
+    "systolic": 124,
+    "diastolic": 78,
+    "ldl": 158,
+    "flags": ["elevated ldl"]
+  },
+  "verified_medical_history": {
+    "conditions": ["hyperlipidemia"],
+    "matches_application": true,
+    "notes": "Hyperlipidemia confirmed; statin on file."
+  },
+  "financial_coverage_check": {
+    "consistent": true,
+    "coverage_to_income": 7.89,
+    "existing_coverage_verified": 0,
+    "notes": "Face amount is within income guidelines."
+  }
+}

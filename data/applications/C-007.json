@@ -1,0 +1,12 @@
+{
+  "name": "Nora Alvarez",
+  "age": 38,
+  "gender": "female",
+  "occupation": "graphic designer",
+  "annual_income": 64000,
+  "coverage_amount": 1100000,
+  "term_length_years": 25,
+  "smoker": false,
+  "medical_conditions": [],
+  "existing_life_insurance": 0
+}

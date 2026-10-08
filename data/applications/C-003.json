@@ -1,3 +1,12 @@
 {
-  "text": "Hi, Casey Morgan here, 41. Looking for $300k term life. Non-smoker, income around $70k, no prior claims."
+  "name": "Casey Morgan",
+  "age": 41,
+  "gender": "nonbinary",
+  "occupation": "teacher",
+  "annual_income": 70000,
+  "coverage_amount": 300000,
+  "term_length_years": 20,
+  "smoker": false,
+  "medical_conditions": [],
+  "existing_life_insurance": 0
 }

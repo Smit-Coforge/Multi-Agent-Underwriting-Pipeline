@@ -5,13 +5,13 @@ from tests.conftest import ALEX, ALEX_RAW, JORDAN, JORDAN_RAW, fake_for
 def test_second_case_does_not_contain_first(tmp_path) -> None:
     case_a = run_pipeline(
         ALEX_RAW,
-        "C-A",
+        "C-001",
         fake_for(ALEX),
         report_dir=tmp_path,
     )
     case_b = run_pipeline(
         JORDAN_RAW,
-        "C-B",
+        "C-002",
         fake_for(JORDAN),
         report_dir=tmp_path,
     )

@@ -3,7 +3,18 @@ from __future__ import annotations
 import json
 from typing import Any
 
-REQUIRED = ("name", "age", "product", "coverage", "smoker", "income", "claims")
+REQUIRED = (
+    "name",
+    "age",
+    "gender",
+    "occupation",
+    "annual_income",
+    "coverage_amount",
+    "term_length_years",
+    "smoker",
+    "medical_conditions",
+    "existing_life_insurance",
+)
 
 
 def intake_agent(raw_application: Any, *, case_id: str, llm: Any) -> dict[str, Any]:
@@ -18,10 +29,12 @@ def intake_agent(raw_application: Any, *, case_id: str, llm: Any) -> dict[str, A
                 "role": "system",
                 "content": (
                     "Extract a term life application into JSON with keys: "
-                    "name (string), age (integer years), product (always "
-                    '"term_life"), coverage (integer USD face amount), '
-                    "smoker (boolean), income (integer annual USD), "
-                    "claims (list of {year, type, severity}). "
+                    "name (string), age (integer years), gender (string), "
+                    "occupation (string), annual_income (integer USD), "
+                    "coverage_amount (integer USD face amount), "
+                    "term_length_years (integer), smoker (boolean), "
+                    "medical_conditions (list of strings), "
+                    "existing_life_insurance (integer USD already in force, 0 if none). "
                     "Use only the user message. Do not invent medical history."
                 ),
             },

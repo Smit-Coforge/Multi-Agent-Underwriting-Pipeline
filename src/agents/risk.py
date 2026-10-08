@@ -10,13 +10,13 @@ RISK_SYSTEM = (
     "Use only the user JSON. Do not invent labs, diagnoses, or a different score."
 )
 
+SEVERE = ("cad", "copd", "cancer", "stroke")
 
-def _at_fault(claims: list[Any]) -> bool:
-    for claim in claims:
-        blob = json.dumps(claim).lower() if not isinstance(claim, str) else claim.lower()
-        if "at-fault" in blob or "at fault" in blob:
-            return True
-    return False
+
+def _conditions(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]
 
 
 def compute_term_life_score(
@@ -27,43 +27,58 @@ def compute_term_life_score(
     factors: list[str] = []
 
     if applicant.get("smoker"):
-        score += 0.35
+        score += 0.30
         factors.append("Current tobacco use")
 
     age = int(applicant.get("age") or 0)
-    if age >= 50:
-        score += 0.18
-        factors.append(f"Age {age} (50+ mortality class)")
-    elif age >= 40:
+    if age >= 55:
+        score += 0.16
+        factors.append(f"Age {age} (55+ mortality class)")
+    elif age >= 45:
         score += 0.08
         factors.append(f"Age {age}")
 
-    credit = enrichment.get("credit_band") or "fair"
-    if credit == "poor":
+    disclosed = _conditions(applicant.get("medical_conditions"))
+    if disclosed:
+        score += min(0.08 * len(disclosed), 0.24)
+        factors.append(f"{len(disclosed)} disclosed medical condition(s)")
+
+    verified = enrichment.get("verified_medical_history") or {}
+    verified_conditions = _conditions(verified.get("conditions"))
+    history = " ".join(disclosed + verified_conditions).lower()
+    if any(token in history for token in SEVERE):
+        score += 0.15
+        factors.append("Severe condition on file")
+
+    if verified.get("matches_application") is False:
         score += 0.12
-        factors.append("Poor credit band")
-    elif credit == "fair":
-        score += 0.06
-        factors.append("Fair credit band")
+        factors.append("Verified history does not match the application")
 
-    claims = list(applicant.get("claims") or [])
-    prior = int(enrichment.get("prior_claims") or len(claims))
-    if prior:
-        score += 0.06 * prior
-        factors.append(f"{prior} prior claim(s) on record")
-    if _at_fault(claims):
-        score += 0.10
-        factors.append("At-fault driving incident")
+    labs = enrichment.get("recent_lab_results") or {}
+    flags = _conditions(labs.get("flags"))
+    if flags:
+        score += min(0.08 * len(flags), 0.16)
+        factors.append(f"{len(flags)} abnormal lab flag(s)")
 
-    income = int(applicant.get("income") or 0)
-    coverage = int(applicant.get("coverage") or 0)
+    prescriptions = enrichment.get("prescription_history") or []
+    if isinstance(prescriptions, list) and prescriptions:
+        score += min(0.04 * len(prescriptions), 0.12)
+        factors.append(f"{len(prescriptions)} current prescription(s)")
+
+    financial = enrichment.get("financial_coverage_check") or {}
+    if financial.get("consistent") is False:
+        score += 0.18
+        factors.append("Coverage is inconsistent with income")
+
+    income = int(applicant.get("annual_income") or 0)
+    coverage = int(applicant.get("coverage_amount") or 0)
     if income > 0:
         ratio = coverage / income
         if ratio > 15:
             score += 0.20
-            factors.append(f"Face amount {ratio:.0f}x income (financial over-insurance)")
+            factors.append(f"Face amount {ratio:.0f}x income")
         elif ratio > 10:
-            score += 0.08
+            score += 0.10
             factors.append(f"Face amount {ratio:.0f}x income")
 
     score = min(1.0, max(0.0, round(score, 2)))

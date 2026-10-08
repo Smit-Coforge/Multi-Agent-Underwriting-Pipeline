@@ -47,11 +47,11 @@ def test_risk_timeout_retries_then_escalates(tmp_path) -> None:
             "recommendation": {"reason": "unused"},
         }
     )
-    case = run_pipeline(CASEY_RAW, "T-1", llm, report_dir=tmp_path)
+    case = run_pipeline(CASEY_RAW, "C-003", llm, report_dir=tmp_path)
     assert case["decision"]["outcome"] == "refer"
     assert "risk failed after 3 attempts" in case["decision"]["reason"]
     assert case["risk"] is None
-    rows = _report(tmp_path, "T-1")["trace"]
+    rows = _report(tmp_path, "C-003")["trace"]
     risk_errors = [row for row in rows if row["agent"] == "risk"]
     assert [row["retry"] for row in risk_errors] == [0, 1, 2]
     assert all(row["status"] == "error" for row in risk_errors)

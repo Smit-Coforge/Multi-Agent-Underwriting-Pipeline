@@ -8,6 +8,7 @@ def test_intake_agent_extracts_applicant() -> None:
     out = intake_agent(ALEX_RAW, case_id="C-001", llm=llm)
     assert out["name"] == "Alex Rivera"
     assert out["age"] == 34
-    assert out["coverage"] == 500000
+    assert out["coverage_amount"] == 500000
     assert out["smoker"] is False
-    assert out["claims"][0]["year"] == 2021
+    assert out["medical_conditions"] == []
+    assert out["annual_income"] == 85000

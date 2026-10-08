@@ -1,3 +1,12 @@
 {
-  "text": "I'm Jordan Blake, 52 years old. I want $1 million in term life. I smoke. Income is about $60k. Claims: 2019 auto, 2022 home water damage, and a 2023 at-fault auto accident."
+  "name": "Jordan Blake",
+  "age": 54,
+  "gender": "male",
+  "occupation": "construction supervisor",
+  "annual_income": 60000,
+  "coverage_amount": 1000000,
+  "term_length_years": 20,
+  "smoker": true,
+  "medical_conditions": ["COPD", "hypertension"],
+  "existing_life_insurance": 100000
 }

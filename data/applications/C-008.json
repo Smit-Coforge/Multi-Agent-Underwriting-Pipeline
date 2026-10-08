@@ -1,0 +1,12 @@
+{
+  "name": "Marcus Hale",
+  "age": 36,
+  "gender": "male",
+  "occupation": "pilot",
+  "annual_income": 140000,
+  "coverage_amount": 1000000,
+  "term_length_years": 20,
+  "smoker": false,
+  "medical_conditions": ["asthma"],
+  "existing_life_insurance": 250000
+}

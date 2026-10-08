@@ -1,0 +1,24 @@
+{
+  "prescription_history": [
+    {"drug": "albuterol", "reason": "asthma"}
+  ],
+  "recent_lab_results": {
+    "date": "2026-03-19",
+    "a1c": 5.3,
+    "systolic": 120,
+    "diastolic": 76,
+    "ldl": 110,
+    "flags": []
+  },
+  "verified_medical_history": {
+    "conditions": ["asthma"],
+    "matches_application": true,
+    "notes": "Mild asthma confirmed; rescue inhaler only."
+  },
+  "financial_coverage_check": {
+    "consistent": true,
+    "coverage_to_income": 7.14,
+    "existing_coverage_verified": 250000,
+    "notes": "Requested face amount and existing coverage are consistent with income."
+  }
+}

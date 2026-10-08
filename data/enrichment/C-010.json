@@ -1,0 +1,24 @@
+{
+  "prescription_history": [
+    {"drug": "sertraline", "reason": "anxiety"}
+  ],
+  "recent_lab_results": {
+    "date": "2026-04-01",
+    "a1c": 5.2,
+    "systolic": 122,
+    "diastolic": 78,
+    "ldl": 108,
+    "flags": []
+  },
+  "verified_medical_history": {
+    "conditions": ["anxiety"],
+    "matches_application": true,
+    "notes": "Anxiety confirmed; no other diagnoses on file."
+  },
+  "financial_coverage_check": {
+    "consistent": true,
+    "coverage_to_income": 6.41,
+    "existing_coverage_verified": 150000,
+    "notes": "Requested face amount and existing coverage are consistent with income."
+  }
+}
