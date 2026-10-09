@@ -3,10 +3,10 @@
   "age": 50,
   "gender": "female",
   "occupation": "restaurant owner",
-  "annual_income": 55000,
-  "coverage_amount": 800000,
+  "annual_income": 88000,
+  "coverage_amount": 450000,
   "term_length_years": 15,
-  "smoker": true,
+  "smoker": false,
   "medical_conditions": [],
   "existing_life_insurance": 0
 }

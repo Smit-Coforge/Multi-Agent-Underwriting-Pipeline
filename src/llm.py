@@ -7,6 +7,13 @@ from typing import Any
 import ollama
 
 
+def parse_json_object(content: str) -> dict[str, Any]:
+    data = json.loads(content)
+    if not isinstance(data, dict):
+        raise ValueError("LLM response must be a JSON object")  # noqa: TRY004
+    return data
+
+
 class FakeLLM:
     """Canned JSON replies for tests. Same complete() shape as OllamaLLM."""
 
@@ -39,7 +46,7 @@ class OllamaLLM:
             messages=messages,
             format="json",
             think=False,
-            options={"num_predict": 220},
+            options={"num_predict": 512},
         )
         self.last_usage = {
             "prompt_tokens": int(resp.prompt_eval_count or 0),

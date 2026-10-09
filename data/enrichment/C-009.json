@@ -1,24 +1,22 @@
 {
   "prescription_history": [
-    {"drug": "lisinopril", "reason": "hypertension"}
+    {"drug": "metformin", "reason": "type 2 diabetes"}
   ],
   "recent_lab_results": {
     "date": "2025-12-09",
-    "a1c": 5.5,
-    "systolic": 146,
-    "diastolic": 92,
+    "a1c": 7.0,
+    "systolic": 128,
+    "diastolic": 82,
     "ldl": 118,
-    "flags": ["elevated blood pressure"]
+    "flags": ["elevated a1c"]
   },
   "verified_medical_history": {
-    "conditions": ["hypertension"],
-    "matches_application": false,
-    "notes": "Hypertension is on file and was not disclosed on the application."
+    "conditions": ["type 2 diabetes"],
+    "notes": "Type 2 diabetes is on file. The application lists no medical conditions."
   },
   "financial_coverage_check": {
-    "consistent": false,
-    "coverage_to_income": 14.55,
+    "coverage_to_income": 5.11,
     "existing_coverage_verified": 0,
-    "notes": "Requested face amount is high relative to stated income."
+    "notes": "Requested face amount is about 5 times income."
   }
 }

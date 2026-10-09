@@ -10,13 +10,11 @@
   },
   "verified_medical_history": {
     "conditions": [],
-    "matches_application": true,
     "notes": "No diagnoses on file."
   },
   "financial_coverage_check": {
-    "consistent": false,
-    "coverage_to_income": 17.19,
+    "coverage_to_income": 20.0,
     "existing_coverage_verified": 0,
-    "notes": "Requested face amount is far above stated income."
+    "notes": "Requested face amount is 20 times stated income. No other coverage is in force."
   }
 }

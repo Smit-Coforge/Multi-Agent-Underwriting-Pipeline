@@ -13,11 +13,9 @@
   },
   "verified_medical_history": {
     "conditions": ["COPD", "hypertension"],
-    "matches_application": true,
     "notes": "COPD and hypertension confirmed on file."
   },
   "financial_coverage_check": {
-    "consistent": false,
     "coverage_to_income": 16.67,
     "existing_coverage_verified": 100000,
     "notes": "Requested face amount is above income guidelines, with other coverage already in force."

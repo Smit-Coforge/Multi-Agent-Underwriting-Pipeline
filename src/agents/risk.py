@@ -3,14 +3,17 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from src.llm import parse_json_object
+
 RISK_SYSTEM = (
-    "You are a term life underwriter. A numeric risk score on [0, 1] is already "
-    "computed (0 = preferred, 1 = decline). List the mortality and financial "
-    "factors that apply. Return JSON only: {\"factors\": [\"...\"]}. "
-    "Use only the user JSON. Do not invent labs, diagnoses, or a different score."
+    "You are a term life underwriter. score, band, and factors are already "
+    "computed and must not be changed. Write one short underwriter note from "
+    'the file. Return JSON only: {"underwriter_note": "..."}. '
+    "Use only the user JSON. Do not invent labs or diagnoses."
 )
 
 SEVERE = ("cad", "copd", "cancer", "stroke")
+_NOTE = "Score, band, and factors were computed in code."
 
 
 def _conditions(value: Any) -> list[str]:
@@ -43,6 +46,11 @@ def compute_term_life_score(
         score += min(0.08 * len(disclosed), 0.24)
         factors.append(f"{len(disclosed)} disclosed medical condition(s)")
 
+    flags = applicant.get("consistency_flags") or []
+    if isinstance(flags, list) and flags:
+        score += min(0.08 * len(flags), 0.16)
+        factors.append(f"{len(flags)} consistency flag(s)")
+
     verified = enrichment.get("verified_medical_history") or {}
     verified_conditions = _conditions(verified.get("conditions"))
     history = " ".join(disclosed + verified_conditions).lower()
@@ -50,25 +58,26 @@ def compute_term_life_score(
         score += 0.15
         factors.append("Severe condition on file")
 
-    if verified.get("matches_application") is False:
+    findings = enrichment.get("nondisclosure_findings") or []
+    if isinstance(findings, list) and findings:
         score += 0.12
-        factors.append("Verified history does not match the application")
+        factors.append("Non-disclosure suggested by records")
 
     labs = enrichment.get("recent_lab_results") or {}
-    flags = _conditions(labs.get("flags"))
-    if flags:
-        score += min(0.08 * len(flags), 0.16)
-        factors.append(f"{len(flags)} abnormal lab flag(s)")
+    lab_flags = _conditions(labs.get("flags"))
+    if lab_flags:
+        score += min(0.08 * len(lab_flags), 0.16)
+        factors.append(f"{len(lab_flags)} abnormal lab flag(s)")
 
     prescriptions = enrichment.get("prescription_history") or []
     if isinstance(prescriptions, list) and prescriptions:
         score += min(0.04 * len(prescriptions), 0.12)
         factors.append(f"{len(prescriptions)} current prescription(s)")
 
-    financial = enrichment.get("financial_coverage_check") or {}
-    if financial.get("consistent") is False:
+    assessment = enrichment.get("coverage_assessment") or {}
+    if isinstance(assessment, dict) and assessment.get("justified") is False:
         score += 0.18
-        factors.append("Coverage is inconsistent with income")
+        factors.append("Coverage is not justified")
 
     income = int(applicant.get("annual_income") or 0)
     coverage = int(applicant.get("coverage_amount") or 0)
@@ -100,7 +109,7 @@ def risk_scoring_agent(
     case_id: str,
     llm: Any,
 ) -> dict[str, Any]:
-    score, band, computed = compute_term_life_score(applicant, enrichment)
+    score, band, factors = compute_term_life_score(applicant, enrichment)
     content = llm.complete(
         [
             {"role": "system", "content": RISK_SYSTEM},
@@ -112,14 +121,23 @@ def risk_scoring_agent(
                         "enrichment": enrichment,
                         "score": score,
                         "band": band,
+                        "factors": factors,
                     }
                 ),
             },
         ],
         agent="risk",
     )
-    data = json.loads(content)
-    factors = data.get("factors")
-    if not isinstance(factors, list) or not factors:
-        factors = computed
-    return {"score": score, "band": band, "factors": factors}
+    data = parse_json_object(content)
+    # The model may echo a score or a factor list. Those keys are ignored.
+    note = data.get("underwriter_note")
+    if isinstance(note, str) and note.strip():
+        underwriter_note = note.strip()
+    else:
+        underwriter_note = _NOTE
+    return {
+        "score": score,
+        "band": band,
+        "factors": factors,
+        "underwriter_note": underwriter_note,
+    }

@@ -7,7 +7,7 @@ import pytest
 from src import tracing
 from src.llm import FakeLLM
 
-ALEX: dict[str, Any] = {
+ALEX_RAW: dict[str, Any] = {
     "name": "Alex Rivera",
     "age": 34,
     "gender": "female",
@@ -20,7 +20,9 @@ ALEX: dict[str, Any] = {
     "existing_life_insurance": 0,
 }
 
-JORDAN: dict[str, Any] = {
+ALEX: dict[str, Any] = {**ALEX_RAW, "consistency_flags": []}
+
+JORDAN_RAW: dict[str, Any] = {
     "name": "Jordan Blake",
     "age": 54,
     "gender": "male",
@@ -33,7 +35,13 @@ JORDAN: dict[str, Any] = {
     "existing_life_insurance": 100000,
 }
 
-CASEY: dict[str, Any] = {
+JORDAN: dict[str, Any] = {
+    **JORDAN_RAW,
+    "medical_conditions": ["copd", "hypertension"],
+    "consistency_flags": [],
+}
+
+CASEY_RAW: dict[str, Any] = {
     "name": "Casey Morgan",
     "age": 41,
     "gender": "nonbinary",
@@ -46,18 +54,32 @@ CASEY: dict[str, Any] = {
     "existing_life_insurance": 0,
 }
 
-ALEX_RAW = ALEX
-JORDAN_RAW = JORDAN
-CASEY_RAW = CASEY
+CASEY: dict[str, Any] = {**CASEY_RAW, "consistency_flags": []}
 
 
 def fake_for(applicant: dict[str, Any]) -> FakeLLM:
     return FakeLLM(
         {
-            "intake": applicant,
-            "enrichment": {"summary": "Term life file summary."},
-            "risk": {"factors": ["computed from file"]},
-            "recommendation": {"reason": "Threshold applied to the risk score."},
+            "intake": {
+                "medical_conditions": applicant.get("medical_conditions", []),
+                "consistency_flags": applicant.get("consistency_flags", []),
+            },
+            "enrichment": {
+                "nondisclosure_findings": [],
+                "coverage_assessment": {
+                    "justified": True,
+                    "reason": "Coverage is consistent with income.",
+                },
+            },
+            "risk": {
+                "score": 0.99,
+                "factors": ["not the official factors"],
+                "underwriter_note": "Note from the model.",
+            },
+            "recommendation": {
+                "reason": "Threshold applied to the risk score.",
+                "review_checklist": ["Review the file before issuing."],
+            },
         }
     )
 

@@ -1,5 +1,21 @@
 from typing import Any, TypedDict
 
+# Labels the intake and enrichment models may propose. Code rejects anything else.
+ALLOWED_CONDITIONS: tuple[str, ...] = (
+    "hypertension",
+    "prediabetes",
+    "type2_diabetes",
+    "high_cholesterol",
+    "asthma",
+    "depression_anxiety",
+    "sleep_apnea",
+    "cad",
+    "copd",
+    "cancer_history",
+    "stroke_history",
+    "other",
+)
+
 CONTRACTS: dict[str, dict[str, Any]] = {
     "intake": {"reads": ["raw"], "writes": "applicant"},
     "enrichment": {"reads": ["applicant"], "writes": "enrichment"},

@@ -1,12 +1,12 @@
 {
-  "name": "Marcus Hale",
-  "age": 36,
-  "gender": "male",
-  "occupation": "pilot",
-  "annual_income": 140000,
-  "coverage_amount": 1000000,
-  "term_length_years": 20,
+  "name": "Helen Park",
+  "age": 62,
+  "gender": "female",
+  "occupation": "retired librarian",
+  "annual_income": 42000,
+  "coverage_amount": 150000,
+  "term_length_years": 30,
   "smoker": false,
-  "medical_conditions": ["asthma"],
-  "existing_life_insurance": 250000
+  "medical_conditions": ["COPD"],
+  "existing_life_insurance": 0
 }

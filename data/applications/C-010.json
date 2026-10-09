@@ -7,6 +7,7 @@
   "coverage_amount": 500000,
   "term_length_years": 20,
   "smoker": false,
-  "medical_conditions": ["anxiety"],
+  "medical_conditions": ["high blood pressure"],
+  "medical_conditions_text": "high BP, borderline sugar",
   "existing_life_insurance": 150000
 }

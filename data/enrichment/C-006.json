@@ -13,11 +13,9 @@
   },
   "verified_medical_history": {
     "conditions": ["type 2 diabetes", "coronary artery disease (CAD)"],
-    "matches_application": true,
     "notes": "Diabetes and coronary artery disease confirmed on file."
   },
   "financial_coverage_check": {
-    "consistent": true,
     "coverage_to_income": 5.21,
     "existing_coverage_verified": 100000,
     "notes": "Face amount is within income guidelines."

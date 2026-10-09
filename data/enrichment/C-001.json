@@ -10,11 +10,9 @@
   },
   "verified_medical_history": {
     "conditions": [],
-    "matches_application": true,
     "notes": "No diagnoses on file."
   },
   "financial_coverage_check": {
-    "consistent": true,
     "coverage_to_income": 5.88,
     "existing_coverage_verified": 0,
     "notes": "Face amount is within income guidelines."

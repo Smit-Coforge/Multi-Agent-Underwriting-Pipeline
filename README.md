@@ -47,11 +47,37 @@ The file under `report/` is observability, not working memory. Agents never read
 | risk | | R | R | W | |
 | recommendation | | R | R | R | W |
 
+New fields stay inside those keys: `medical_conditions` and `consistency_flags` on `applicant`, `nondisclosure_findings` and `coverage_assessment` on `enrichment`, `underwriter_note` on `risk`, and `review_checklist` on a refer `decision`.
+
 ## Data
 
-`data/applications/<case_id>.json` is the application: name, age, gender, occupation, annual income, coverage amount, term length, smoker / nicotine use, medical conditions, and existing life insurance.
+`data/applications/<case_id>.json` is the application form: name, age, gender, occupation (typed text), annual income, coverage amount, term length, smoker / nicotine use, medical conditions, and existing life insurance. `medical_conditions_text` is optional free text from a "describe your conditions" box.
 
-`data/enrichment/<case_id>.json` is the enrichment record for that person: prescription history, recent lab results, verified medical history, and a financial / coverage consistency check. The enrichment agent loads it by case id and appends those fields to the case, plus a one-sentence summary.
+`data/enrichment/<case_id>.json` holds the raw record: prescription history, recent lab results, conditions on file, `coverage_to_income`, and `existing_coverage_verified`. It has no pre-baked match or consistency boolean. The enrichment agent always loads all four lookups.
+
+| Case | What it is for |
+|---|---|
+| C-001 Alex Rivera | Clean approve |
+| C-002 Jordan Blake | Deny: smoker, COPD, abnormal labs |
+| C-003 Casey Morgan | Teacher, nothing disclosed |
+| C-004 Samir Patel | Smoker with high cholesterol |
+| C-005 Riley Chen | Clean approve |
+| C-006 Harold Nguyen | Diabetes and coronary artery disease |
+| C-007 Nora Alvarez | Coverage 20× income |
+| C-008 Helen Park | Age 62 asking for a 30-year term; non-smoker with COPD |
+| C-009 Denise Okonkwo | Nothing disclosed; metformin and A1C 7.0 on file |
+| C-010 Evan Brooks | Free text: "high BP, borderline sugar" |
+
+## Agents
+
+The LLM proposes. Code checks the proposal against the form, the looked-up records, or an allowed list before writing it onto the case. A failed check raises `ValueError`. The node wrapper retries that agent 3 times, then refers. Code computes the score, the factor list, and the approve / refer / deny outcome.
+
+| Agent | LLM proposes | Code checks and keeps |
+|---|---|---|
+| intake | Allowed condition labels from `medical_conditions` and `medical_conditions_text`. `consistency_flags` whose `fields` are real form fields. | Form fields copied from the JSON. Every label must be in the allowed list (`hypertension`, `prediabetes`, `type2_diabetes`, `high_cholesterol`, `asthma`, `depression_anxiety`, `sleep_apnea`, `cad`, `copd`, `cancer_history`, `stroke_history`, `other`). Every flag field must be a real form name. Required keys still have to be present. |
+| enrichment | `nondisclosure_findings` (`evidence_type` of `prescription`, `lab`, or `medical_history`) and `coverage_assessment` (`justified` plus a reason). | All four lookups. `evidence` must exactly match a drug name, a lab key, or a condition on file. `suggests` must be an allowed label. A finding whose label is already disclosed is dropped. `justified` must be a bool. |
+| risk | An `underwriter_note` only. | `compute_term_life_score` sets `score`, `band`, and `factors`. A non-empty findings list adds 0.12. `justified: false` adds 0.18. Each consistency flag adds 0.08, capped at 0.16. |
+| recommendation | A reason that uses the flags, findings, coverage assessment, and factors. On refer, a short `review_checklist`. | `pick_outcome(score)`. If the reason call fails, the outcome stays and the fallback sentence is used. Refer still includes a checklist. |
 
 ## How to run
 
@@ -64,7 +90,7 @@ python run.py C-001
 # C-002 through C-010
 ```
 
-Term life score is computed in code (tobacco, age, disclosed and severe conditions, history mismatch, lab flags, prescriptions, coverage consistency, face/income). The LLM only lists factors and writes the decision reason. Thresholds: `< 0.4` approve, `≤ 0.7` refer, else deny.
+Term life debits are computed in code: tobacco, age, disclosed conditions, severe conditions, lab flags, prescriptions, face amount versus income, non-disclosure findings, unjustified coverage, and consistency flags. Thresholds: `< 0.4` approve, `≤ 0.7` refer, else deny.
 
 If an agent raises (timeout, bad JSON), the wrapper retries 3 times then refers. Nothing is keyed off a special case id.
 
