@@ -80,10 +80,9 @@ def _conditions(raw: Any) -> list[str]:
     return labels
 
 
-def _flags(raw: Any) -> list[dict[str, Any]]:
+def _flags(raw: Any, form: dict[str, Any], conditions: list[str]) -> list[dict[str, Any]]:
     if not isinstance(raw, list):
         raise ValueError("consistency_flags must be a list")  # noqa: TRY004
-    flags: list[dict[str, Any]] = []
     for item in raw:
         if not isinstance(item, dict):
             raise ValueError("consistency flag must be an object")  # noqa: TRY004
@@ -91,15 +90,54 @@ def _flags(raw: Any) -> list[dict[str, Any]]:
         issue = item.get("issue")
         if not isinstance(fields, list) or not fields:
             raise ValueError("consistency flag fields must be a non-empty list")
-        cleaned: list[str] = []
         for field in fields:
             if field not in APPLICATION_FIELDS:
                 raise ValueError(f"unknown application field: {field!r}")
-            if field not in cleaned:
-                cleaned.append(field)
         if not isinstance(issue, str) or not issue.strip():
             raise ValueError("consistency flag issue must be a non-empty string")
-        flags.append({"fields": cleaned, "issue": issue.strip()})
+    return _true_flags(form, conditions)
+
+
+def _true_flags(form: dict[str, Any], conditions: list[str]) -> list[dict[str, Any]]:
+    flags: list[dict[str, Any]] = []
+    occupation = str(form.get("occupation") or "").lower()
+    income = int(form.get("annual_income") or 0)
+    coverage = int(form.get("coverage_amount") or 0)
+    age = int(form.get("age") or 0)
+    term = int(form.get("term_length_years") or 0)
+    raw_conditions = form.get("medical_conditions") or []
+    text = str(form.get("medical_conditions_text") or "")
+    disclosed = " ".join([*conditions, *raw_conditions, text]).lower()
+
+    low_wage = ("student", "intern", "unemployed")
+    if any(role in occupation for role in low_wage) and income >= 100_000:
+        flags.append(
+            {
+                "fields": ["occupation", "annual_income"],
+                "issue": "Occupation has no steady wage and income is very high.",
+            }
+        )
+    if age + term > 80:
+        flags.append(
+            {
+                "fields": ["age", "term_length_years"],
+                "issue": f"Age {age} plus a {term}-year term runs past age 80.",
+            }
+        )
+    if form.get("smoker") is False and "copd" in disclosed:
+        flags.append(
+            {
+                "fields": ["smoker", "medical_conditions"],
+                "issue": "Non-smoker with COPD disclosed.",
+            }
+        )
+    if income > 0 and coverage / income >= 15:
+        flags.append(
+            {
+                "fields": ["annual_income", "coverage_amount"],
+                "issue": f"Face amount is {coverage / income:.0f}x income.",
+            }
+        )
     return flags
 
 
@@ -120,5 +158,7 @@ def intake_agent(raw_application: Any, *, case_id: str, llm: Any) -> dict[str, A
         if not isinstance(text, str):
             raise ValueError("medical_conditions_text must be a string")
         applicant["medical_conditions_text"] = text
-    applicant["consistency_flags"] = _flags(data.get("consistency_flags"))
+    applicant["consistency_flags"] = _flags(
+        data.get("consistency_flags"), form, applicant["medical_conditions"]
+    )
     return applicant

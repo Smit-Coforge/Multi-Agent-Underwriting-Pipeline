@@ -22,7 +22,7 @@ Each object has evidence_type, evidence, suggests, and explanation.
 evidence_type is one of: prescription, lab, medical_history.
 evidence must be copied exactly from the records. Do not paraphrase it and do not return a number.
 - prescription: the drug string from prescription_history.
-- lab: a key of recent_lab_results, one of a1c, systolic, diastolic, or ldl. Not date, not flags, and not the lab number.
+- lab: the key only, one of a1c, systolic, diastolic, or ldl. Write a1c, not "a1c: 5.2". Not date and not flags.
 - medical_history: one string from verified_medical_history.conditions, copied as written.
 suggests is the one label that record points to. It must be one of:
 {_LABELS}
@@ -38,6 +38,35 @@ The checks below are separate. Either one is enough to set justified to false.
 1. requested_coverage_to_income is 15 or higher.
 2. The ratio is under 15, but the face amount does not fit this age and term.
 Set justified to true only when the ratio is under 15 and the amount fits this age and term."""
+
+
+_LAB_KEYS = ("a1c", "systolic", "diastolic", "ldl")
+
+
+def _lab_key(evidence: str, labs: dict[str, Any]) -> str | None:
+    if evidence in _LAB_KEYS and evidence in labs:
+        return evidence
+    head = evidence.split(":", 1)[0].strip().lower()
+    if head in _LAB_KEYS and head in labs:
+        return head
+    return None
+
+
+def _lab_supports(labs: dict[str, Any], key: str, suggests: str) -> bool:
+    value = labs.get(key)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    if key == "a1c" and suggests == "type2_diabetes":
+        return value >= 6.5
+    if key == "a1c" and suggests == "prediabetes":
+        return 5.7 <= value < 6.5
+    if key == "systolic" and suggests == "hypertension":
+        return value >= 140
+    if key == "diastolic" and suggests == "hypertension":
+        return value >= 90
+    if key == "ldl" and suggests == "high_cholesterol":
+        return value >= 160
+    return False
 
 
 def _evidence(looked_up: dict[str, Any]) -> dict[str, set[str]]:
@@ -78,7 +107,21 @@ def _findings(
         explanation = item.get("explanation")
         if evidence_type not in _EVIDENCE_TYPES:
             raise ValueError(f"invalid evidence_type: {evidence_type!r}")
-        if not isinstance(evidence, str) or evidence not in known[evidence_type]:
+        if not isinstance(evidence, str):
+            raise ValueError(  # noqa: TRY004
+                f"evidence not in {evidence_type} records: {evidence!r}"
+            )
+        if evidence_type == "lab":
+            labs = looked_up.get("recent_lab_results") or {}
+            if not isinstance(labs, dict):
+                labs = {}
+            key = _lab_key(evidence, labs)
+            if key is None:
+                raise ValueError(f"evidence not in lab records: {evidence!r}")
+            if not isinstance(suggests, str) or not _lab_supports(labs, key, suggests):
+                continue
+            evidence = key
+        elif evidence not in known[evidence_type]:
             raise ValueError(
                 f"evidence not in {evidence_type} records: {evidence!r}"
             )
