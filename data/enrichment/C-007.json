@@ -1,20 +1,22 @@
 {
-  "prescription_history": [],
-  "recent_lab_results": {
-    "date": "2026-02-28",
-    "a1c": 5.2,
-    "systolic": 118,
-    "diastolic": 76,
-    "ldl": 102,
-    "flags": []
+  "mvr": {
+    "violations": [],
+    "at_fault_accidents": 0,
+    "license_status": "valid"
   },
-  "verified_medical_history": {
-    "conditions": [],
-    "notes": "No diagnoses on file."
+  "claims_history": {
+    "claims": [],
+    "notes": "No claims on file."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 20.0,
-    "existing_coverage_verified": 0,
-    "notes": "Requested face amount is 20 times stated income. No other coverage is in force."
+  "vehicle_record": {
+    "year": 2020,
+    "make": "Hyundai",
+    "model": "Elantra",
+    "garaging_zip": "30301"
+  },
+  "territory": {
+    "zip_code": "30301",
+    "risk_band": "low",
+    "notes": "Ordinary zip."
   }
 }

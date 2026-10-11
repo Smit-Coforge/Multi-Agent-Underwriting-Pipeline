@@ -1,12 +1,15 @@
 {
   "name": "Harold Nguyen",
-  "age": 61,
-  "gender": "male",
-  "occupation": "retired teacher",
-  "annual_income": 48000,
-  "coverage_amount": 250000,
-  "term_length_years": 10,
-  "smoker": false,
-  "medical_conditions": ["type 2 diabetes", "coronary artery disease (CAD)"],
-  "existing_life_insurance": 100000
+  "age": 48,
+  "zip_code": "73301",
+  "years_licensed": 25,
+  "vehicle_year": 2014,
+  "vehicle_make": "Ford",
+  "vehicle_model": "F-150",
+  "annual_mileage": 11000,
+  "coverage_level": "full",
+  "violations_disclosed": [
+    "reckless"
+  ],
+  "accidents_disclosed": 1
 }

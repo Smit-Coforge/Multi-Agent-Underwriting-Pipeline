@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +56,7 @@ def _escalate(case: CaseState, log: list[dict[str, Any]]) -> dict[str, Any]:
     decision = {
         "outcome": "refer",
         "reason": f"{agent} failed after 3 attempts",
+        "review_checklist": ["Review the case manually before issuing."],
     }
     write_trace(
         log,
@@ -66,14 +69,17 @@ def _escalate(case: CaseState, log: list[dict[str, Any]]) -> dict[str, Any]:
             "duration_ms": 0,
             "prompt_tokens": 0,
             "completion_tokens": 0,
-            "cost_usd": 0,
+            "cost_usd": 0.0,
             "status": "escalated",
             "error": None,
             "retry": 0,
         },
     )
     print(f"  ⚠ escalate        REFER: {decision['reason']}")
-    return {"decision": decision}
+    update: dict[str, Any] = {"decision": decision}
+    if agent == "risk":
+        update["risk"] = None
+    return update
 
 
 def build_graph(llm: Any, log: list[dict[str, Any]]) -> Any:
@@ -103,7 +109,11 @@ def build_graph(llm: Any, log: list[dict[str, Any]]) -> Any:
         _router("risk", "recommendation"),
         {"recommendation": "recommendation", "escalate": "escalate"},
     )
-    graph.add_edge("recommendation", END)
+    graph.add_conditional_edges(
+        "recommendation",
+        _router("recommendation", END),
+        {END: END, "escalate": "escalate"},
+    )
     graph.add_edge("escalate", END)
     return graph.compile()
 
@@ -117,10 +127,26 @@ def run_pipeline(
     log: list[dict[str, Any]] = []
     app = build_graph(llm, log)
     case = app.invoke(new_case(case_id, raw))
-    out_dir = Path(report_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / f"{case_id}.json").write_text(
+    _write_run_report(report_dir, case_id, case, log)
+    return case
+
+
+def _write_run_report(
+    report_dir: str | Path,
+    case_id: str,
+    case: dict[str, Any],
+    log: list[dict[str, Any]],
+) -> Path:
+    """One file per run. A later run of the same case does not replace this one."""
+    folder = Path(report_dir) / case_id
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    path = folder / f"{stamp}.json"
+    if path.exists():
+        path = folder / f"{stamp}-{time.time_ns()}.json"
+    case["report_path"] = str(path)
+    path.write_text(
         json.dumps({"case": case, "trace": log}, indent=2, default=str),
         encoding="utf-8",
     )
-    return case
+    return path

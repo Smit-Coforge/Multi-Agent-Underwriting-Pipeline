@@ -9,7 +9,7 @@ from src.llm import OllamaLLM
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the underwriting pipeline")
+    parser = argparse.ArgumentParser(description="Run the auto insurance underwriting pipeline")
     parser.add_argument("case_id")
     args = parser.parse_args()
     path = Path("data/applications") / f"{args.case_id}.json"
@@ -19,7 +19,7 @@ def main() -> None:
     decision = case.get("decision") or {}
     outcome = str(decision.get("outcome", "?")).upper()
     print(f"  decision  {outcome}: {decision.get('reason', '')}")
-    print(f"  report → report/{args.case_id}.json")
+    print(f"  report → {case['report_path']}")
 
 
 if __name__ == "__main__":

@@ -1,23 +1,30 @@
 {
-  "prescription_history": [
-    {"drug": "metformin", "reason": "type 2 diabetes"},
-    {"drug": "atorvastatin", "reason": "coronary artery disease (CAD)"}
-  ],
-  "recent_lab_results": {
-    "date": "2026-01-05",
-    "a1c": 7.4,
-    "systolic": 136,
-    "diastolic": 82,
-    "ldl": 148,
-    "flags": ["elevated a1c", "elevated ldl"]
+  "mvr": {
+    "violations": [
+      "reckless"
+    ],
+    "at_fault_accidents": 1,
+    "license_status": "suspended"
   },
-  "verified_medical_history": {
-    "conditions": ["type 2 diabetes", "coronary artery disease (CAD)"],
-    "notes": "Diabetes and coronary artery disease confirmed on file."
+  "claims_history": {
+    "claims": [
+      {
+        "type": "collision",
+        "year": 2024,
+        "at_fault": true
+      }
+    ],
+    "notes": "One at-fault claim. License is suspended."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 5.21,
-    "existing_coverage_verified": 100000,
-    "notes": "Face amount is within income guidelines."
+  "vehicle_record": {
+    "year": 2014,
+    "make": "Ford",
+    "model": "F-150",
+    "garaging_zip": "73301"
+  },
+  "territory": {
+    "zip_code": "73301",
+    "risk_band": "medium",
+    "notes": "Mixed suburban zip."
   }
 }

@@ -1,12 +1,13 @@
 {
   "name": "Casey Morgan",
   "age": 41,
-  "gender": "nonbinary",
-  "occupation": "teacher",
-  "annual_income": 70000,
-  "coverage_amount": 300000,
-  "term_length_years": 20,
-  "smoker": false,
-  "medical_conditions": [],
-  "existing_life_insurance": 0
+  "zip_code": "60614",
+  "years_licensed": 20,
+  "vehicle_year": 2018,
+  "vehicle_make": "Toyota",
+  "vehicle_model": "Camry",
+  "annual_mileage": 9000,
+  "coverage_level": "liability",
+  "violations_disclosed": [],
+  "accidents_disclosed": 0
 }

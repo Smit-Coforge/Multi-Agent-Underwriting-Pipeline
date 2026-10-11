@@ -1,12 +1,13 @@
 {
   "name": "Helen Park",
-  "age": 62,
-  "gender": "female",
-  "occupation": "retired librarian",
-  "annual_income": 42000,
-  "coverage_amount": 150000,
-  "term_length_years": 30,
-  "smoker": false,
-  "medical_conditions": ["COPD"],
-  "existing_life_insurance": 0
+  "age": 20,
+  "zip_code": "98101",
+  "years_licensed": 10,
+  "vehicle_year": 2008,
+  "vehicle_make": "Toyota",
+  "vehicle_model": "Corolla",
+  "annual_mileage": 6000,
+  "coverage_level": "full",
+  "violations_disclosed": [],
+  "accidents_disclosed": 0
 }

@@ -12,7 +12,7 @@ def test_second_case_does_not_contain_first(tmp_path) -> None:
     case_b = run_pipeline(
         JORDAN_RAW,
         "C-002",
-        fake_for(JORDAN),
+        fake_for(JORDAN, "C-002"),
         report_dir=tmp_path,
     )
     assert case_a["applicant"]["name"] == "Alex Rivera"

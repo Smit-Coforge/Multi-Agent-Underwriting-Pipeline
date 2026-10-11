@@ -1,12 +1,16 @@
 {
   "name": "Jordan Blake",
-  "age": 54,
-  "gender": "male",
-  "occupation": "construction supervisor",
-  "annual_income": 60000,
-  "coverage_amount": 1000000,
-  "term_length_years": 20,
-  "smoker": true,
-  "medical_conditions": ["COPD", "hypertension"],
-  "existing_life_insurance": 100000
+  "age": 22,
+  "zip_code": "48201",
+  "years_licensed": 4,
+  "vehicle_year": 2015,
+  "vehicle_make": "Dodge",
+  "vehicle_model": "Charger",
+  "annual_mileage": 18000,
+  "coverage_level": "full",
+  "violations_disclosed": [
+    "dui",
+    "speeding"
+  ],
+  "accidents_disclosed": 2
 }

@@ -1,23 +1,31 @@
 {
-  "prescription_history": [
-    {"drug": "tiotropium", "reason": "COPD"},
-    {"drug": "lisinopril", "reason": "hypertension"}
-  ],
-  "recent_lab_results": {
-    "date": "2026-01-18",
-    "a1c": 5.9,
-    "systolic": 148,
-    "diastolic": 94,
-    "ldl": 162,
-    "flags": ["elevated blood pressure", "elevated ldl"]
+  "mvr": {
+    "violations": [
+      "dui",
+      "speeding"
+    ],
+    "at_fault_accidents": 2,
+    "license_status": "valid"
   },
-  "verified_medical_history": {
-    "conditions": ["COPD", "hypertension"],
-    "notes": "COPD and hypertension confirmed on file."
+  "claims_history": {
+    "claims": [
+      {
+        "type": "collision",
+        "year": 2025,
+        "at_fault": true
+      }
+    ],
+    "notes": "Two at-fault collisions on file."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 16.67,
-    "existing_coverage_verified": 100000,
-    "notes": "Requested face amount is above income guidelines, with other coverage already in force."
+  "vehicle_record": {
+    "year": 2015,
+    "make": "Dodge",
+    "model": "Charger",
+    "garaging_zip": "48201"
+  },
+  "territory": {
+    "zip_code": "48201",
+    "risk_band": "high",
+    "notes": "High theft and crash zip."
   }
 }

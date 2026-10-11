@@ -1,22 +1,22 @@
 {
-  "prescription_history": [
-    {"drug": "tiotropium", "reason": "COPD"}
-  ],
-  "recent_lab_results": {
-    "date": "2026-03-19",
-    "a1c": 5.6,
-    "systolic": 128,
-    "diastolic": 78,
-    "ldl": 121,
-    "flags": []
+  "mvr": {
+    "violations": [],
+    "at_fault_accidents": 0,
+    "license_status": "valid"
   },
-  "verified_medical_history": {
-    "conditions": ["COPD"],
-    "notes": "COPD is on file. Application lists the applicant as a non-smoker."
+  "claims_history": {
+    "claims": [],
+    "notes": "No claims on file."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 3.57,
-    "existing_coverage_verified": 0,
-    "notes": "Requested face amount is about 3.6 times income. Term would run to age 92."
+  "vehicle_record": {
+    "year": 2008,
+    "make": "Toyota",
+    "model": "Corolla",
+    "garaging_zip": "98101"
+  },
+  "territory": {
+    "zip_code": "98101",
+    "risk_band": "low",
+    "notes": "City zip with average claims."
   }
 }

@@ -20,12 +20,15 @@ class FakeLLM:
     def __init__(self, responses: dict[str, Any]) -> None:
         self.responses = responses
         self.last_usage = {"prompt_tokens": 10, "completion_tokens": 5}
+        self.last_content: str | None = None
 
     def complete(self, messages: list[dict[str, str]], *, agent: str) -> str:
+        # wrap() clears last_usage before the call, so set it here.
+        self.last_usage = {"prompt_tokens": 10, "completion_tokens": 5}
         payload = self.responses[agent]
-        if isinstance(payload, str):
-            return payload
-        return json.dumps(payload)
+        text = payload if isinstance(payload, str) else json.dumps(payload)
+        self.last_content = text
+        return text
 
 
 class OllamaLLM:
@@ -39,6 +42,7 @@ class OllamaLLM:
         )
         self.model = model
         self.last_usage = {"prompt_tokens": 0, "completion_tokens": 0}
+        self.last_content: str | None = None
 
     def complete(self, messages: list[dict[str, str]], *, agent: str) -> str:
         resp = self._client.chat(
@@ -52,4 +56,5 @@ class OllamaLLM:
             "prompt_tokens": int(resp.prompt_eval_count or 0),
             "completion_tokens": int(resp.eval_count or 0),
         }
-        return resp.message.content or ""
+        self.last_content = resp.message.content or ""
+        return self.last_content

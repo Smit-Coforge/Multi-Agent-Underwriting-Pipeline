@@ -1,20 +1,26 @@
 from typing import Any, TypedDict
 
 # Labels the intake and enrichment models may propose. Code rejects anything else.
-ALLOWED_CONDITIONS: tuple[str, ...] = (
-    "hypertension",
-    "prediabetes",
-    "type2_diabetes",
-    "high_cholesterol",
-    "asthma",
-    "depression_anxiety",
-    "sleep_apnea",
-    "cad",
-    "copd",
-    "cancer_history",
-    "stroke_history",
+ALLOWED_VIOLATIONS: tuple[str, ...] = (
+    "speeding",
+    "red_light",
+    "dui",
+    "reckless",
+    "at_fault_accident",
+    "suspended_license",
     "other",
 )
+
+SEVERE_VIOLATIONS: tuple[str, ...] = ("dui", "reckless", "suspended_license")
+
+_ALLOWED_LOOKUP = {label.lower(): label for label in ALLOWED_VIOLATIONS}
+
+
+def canonical_violation(label: object) -> str | None:
+    """Return the allowed label, ignoring case and surrounding space."""
+    if not isinstance(label, str):
+        return None
+    return _ALLOWED_LOOKUP.get(label.strip().lower())
 
 CONTRACTS: dict[str, dict[str, Any]] = {
     "intake": {"reads": ["raw"], "writes": "applicant"},

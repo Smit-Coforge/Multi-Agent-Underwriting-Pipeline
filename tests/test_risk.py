@@ -1,4 +1,6 @@
-from src.agents.risk import compute_term_life_score, risk_scoring_agent
+import pytest
+
+from src.agents.risk import compute_auto_score, risk_scoring_agent
 from src.llm import FakeLLM
 from src.tools.enrichment_lookup import lookup_enrichment
 from tests.conftest import ALEX, JORDAN
@@ -8,84 +10,142 @@ ENRICHMENT_JORDAN = lookup_enrichment("C-002")
 
 
 def test_compute_score_low_risk_approvable() -> None:
-    score, band, factors = compute_term_life_score(ALEX, ENRICHMENT_ALEX)
+    score, band, factors = compute_auto_score(ALEX, ENRICHMENT_ALEX)
     assert score < 0.4
     assert band == "low"
     assert factors
 
 
 def test_compute_score_high_risk_declinable() -> None:
-    score, band, _factors = compute_term_life_score(JORDAN, ENRICHMENT_JORDAN)
+    score, band, _factors = compute_auto_score(JORDAN, ENRICHMENT_JORDAN)
     assert score > 0.7
     assert band == "high"
 
 
-def test_llm_cannot_change_score_band_or_factors() -> None:
+def test_risk_stores_valid_model_judgment() -> None:
+    score, _band, _factors = compute_auto_score(ALEX, ENRICHMENT_ALEX)
     llm = FakeLLM(
         {
             "risk": {
-                "score": 0.99,
-                "band": "high",
-                "factors": ["tobacco"],
+                "score": score + 0.02,
+                "band": "low",
+                "factors": ["Model factor"],
                 "underwriter_note": "Model wanted a different score.",
             }
         }
     )
     out = risk_scoring_agent(ALEX, ENRICHMENT_ALEX, case_id="t", llm=llm)
-    score, band, factors = compute_term_life_score(ALEX, ENRICHMENT_ALEX)
-    assert out["score"] == score
-    assert out["band"] == band
-    assert out["factors"] == factors
-    assert out["factors"] != ["tobacco"]
+    assert out["score"] == score + 0.02
+    assert out["band"] == "low"
+    assert out["factors"] == ["Model factor"]
     assert out["underwriter_note"] == "Model wanted a different score."
 
 
-def test_nondisclosure_unjustified_coverage_and_flags_raise_score() -> None:
-    base, _, _ = compute_term_life_score(ALEX, ENRICHMENT_ALEX)
+def test_risk_stores_a_judgment_that_differs_from_the_formula() -> None:
+    llm = FakeLLM(
+        {
+            "risk": {
+                "score": 0.99,
+                "band": "high",
+                "factors": ["Age and record"],
+                "underwriter_note": "The file as a whole is high risk.",
+            }
+        }
+    )
+    out = risk_scoring_agent(ALEX, ENRICHMENT_ALEX, case_id="t", llm=llm)
+    formula, _, _ = compute_auto_score(ALEX, ENRICHMENT_ALEX)
+    assert out["score"] == 0.99
+    assert out["score"] != formula
+    assert "formula_score" not in out
+    assert out["band"] == "high"
+
+
+def test_risk_rejects_score_band_or_factors_that_fail_the_check() -> None:
+    score, _band, _factors = compute_auto_score(ALEX, ENRICHMENT_ALEX)
+    mismatched_band = FakeLLM(
+        {
+            "risk": {
+                "score": score,
+                "band": "high",
+                "factors": ["Model factor"],
+                "underwriter_note": "Note from the model.",
+            }
+        }
+    )
+    with pytest.raises(ValueError):
+        risk_scoring_agent(ALEX, ENRICHMENT_ALEX, case_id="t", llm=mismatched_band)
+    empty_factors = FakeLLM(
+        {
+            "risk": {
+                "score": score,
+                "band": "low",
+                "factors": [],
+                "underwriter_note": "Note from the model.",
+            }
+        }
+    )
+    with pytest.raises(ValueError):
+        risk_scoring_agent(ALEX, ENRICHMENT_ALEX, case_id="t", llm=empty_factors)
+    dui_on_clean_file = FakeLLM(
+        {
+            "risk": {
+                "score": score,
+                "band": "low",
+                "factors": ["Prior dui"],
+                "underwriter_note": "Note from the model.",
+            }
+        }
+    )
+    with pytest.raises(ValueError):
+        risk_scoring_agent(ALEX, ENRICHMENT_ALEX, case_id="t", llm=dui_on_clean_file)
+
+
+def test_findings_surcharge_and_flags_raise_score() -> None:
+    base, _, _ = compute_auto_score(ALEX, ENRICHMENT_ALEX)
 
     disclosed = {
         **ENRICHMENT_ALEX,
         "nondisclosure_findings": [
             {
-                "evidence_type": "prescription",
-                "evidence": "metformin",
-                "suggests": "type2_diabetes",
+                "evidence_type": "mvr",
+                "evidence": "speeding",
+                "suggests": "speeding",
                 "explanation": "not disclosed",
             }
         ],
     }
-    nondisclosure_score, _, nondisclosure_factors = compute_term_life_score(ALEX, disclosed)
+    nondisclosure_score, _, nondisclosure_factors = compute_auto_score(ALEX, disclosed)
     assert nondisclosure_score > base
-    assert any("non-disclosure" in factor.lower() for factor in nondisclosure_factors)
+    assert any("undisclosed" in factor.lower() for factor in nondisclosure_factors)
 
-    unjustified = {
+    surcharge = {
         **ENRICHMENT_ALEX,
-        "coverage_assessment": {"justified": False, "reason": "20x income"},
+        "rate_assessment": {"surcharge": True, "reason": "High mileage."},
     }
-    unjustified_score, _, unjustified_factors = compute_term_life_score(ALEX, unjustified)
-    assert unjustified_score > base
-    assert any("not justified" in factor.lower() for factor in unjustified_factors)
+    surcharge_score, _, surcharge_factors = compute_auto_score(ALEX, surcharge)
+    assert surcharge_score > base
+    assert any("surcharge" in factor.lower() for factor in surcharge_factors)
 
     flagged = {
         **ALEX,
         "consistency_flags": [
             {
-                "fields": ["occupation", "annual_income"],
-                "issue": "Student income is implausible.",
+                "fields": ["age", "annual_mileage"],
+                "issue": "Mileage is high for this age.",
             }
         ],
     }
-    flagged_score, _, flagged_factors = compute_term_life_score(flagged, ENRICHMENT_ALEX)
+    flagged_score, _, flagged_factors = compute_auto_score(flagged, ENRICHMENT_ALEX)
     assert flagged_score > base
     assert any("consistency" in factor.lower() for factor in flagged_factors)
 
     many_flags = {
         **ALEX,
         "consistency_flags": [
-            {"fields": ["age", "term_length_years"], "issue": f"flag {index}"}
+            {"fields": ["age", "years_licensed"], "issue": f"flag {index}"}
             for index in range(6)
         ],
     }
-    many_score, _, _ = compute_term_life_score(many_flags, ENRICHMENT_ALEX)
+    many_score, _, _ = compute_auto_score(many_flags, ENRICHMENT_ALEX)
     assert many_score > flagged_score
     assert many_score - base <= 0.16 + 1e-9

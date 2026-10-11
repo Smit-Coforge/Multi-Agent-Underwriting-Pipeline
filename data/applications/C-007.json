@@ -1,12 +1,13 @@
 {
   "name": "Nora Alvarez",
-  "age": 38,
-  "gender": "female",
-  "occupation": "graphic designer",
-  "annual_income": 60000,
-  "coverage_amount": 1200000,
-  "term_length_years": 25,
-  "smoker": false,
-  "medical_conditions": [],
-  "existing_life_insurance": 0
+  "age": 23,
+  "zip_code": "30301",
+  "years_licensed": 5,
+  "vehicle_year": 2020,
+  "vehicle_make": "Hyundai",
+  "vehicle_model": "Elantra",
+  "annual_mileage": 26000,
+  "coverage_level": "liability",
+  "violations_disclosed": [],
+  "accidents_disclosed": 0
 }

@@ -1,22 +1,24 @@
 {
-  "prescription_history": [
-    {"drug": "atorvastatin", "reason": "hyperlipidemia"}
-  ],
-  "recent_lab_results": {
-    "date": "2025-11-20",
-    "a1c": 5.4,
-    "systolic": 124,
-    "diastolic": 78,
-    "ldl": 158,
-    "flags": ["elevated ldl"]
+  "mvr": {
+    "violations": [
+      "speeding"
+    ],
+    "at_fault_accidents": 0,
+    "license_status": "valid"
   },
-  "verified_medical_history": {
-    "conditions": ["hyperlipidemia"],
-    "notes": "Hyperlipidemia confirmed; statin on file."
+  "claims_history": {
+    "claims": [],
+    "notes": "No claims on file."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 7.89,
-    "existing_coverage_verified": 0,
-    "notes": "Face amount is within income guidelines."
+  "vehicle_record": {
+    "year": 2016,
+    "make": "Nissan",
+    "model": "Altima",
+    "garaging_zip": "10001"
+  },
+  "territory": {
+    "zip_code": "10001",
+    "risk_band": "medium",
+    "notes": "Dense city driving."
   }
 }

@@ -5,24 +5,24 @@ from typing import Any
 
 from src.llm import parse_json_object
 
+RECOMMENDATION_SYSTEM = (
+    "You are an auto insurance underwriter. Choose the outcome from the whole file, "
+    "not from a score cutoff. approve when the driver and car can be issued. "
+    "refer when a person should look at something specific. deny when the file "
+    "should not be issued. A bad record raises the price or is a decline. "
+    "A consistency flag is an example to consider, not a rule that forces refer or deny. "
+    "On approve, include rate_class. Use surcharge when rate_assessment.surcharge "
+    "is true, and standard when it is false. refer and deny do not include rate_class. "
+    'Return JSON only. For approve: {"outcome": "approve", "reason": "...", '
+    '"rate_class": "standard"}. For deny: {"outcome": "deny", "reason": "..."}. '
+    "For refer, also include review_checklist, a short list of concrete items "
+    'for the human underwriter: {"outcome": "refer", "reason": "...", '
+    '"review_checklist": ["short item"]}. '
+    "reason is one sentence. Use only the user JSON. Do not invent tickets or accidents."
+)
 
-def _system(outcome: str) -> str:
-    if outcome == "refer":
-        shape = '{"reason": "...", "review_checklist": ["short item"]}'
-        extra = (
-            " review_checklist is a short list of concrete items for the human "
-            "underwriter, drawn from those flags and findings."
-        )
-    else:
-        shape = '{"reason": "..."}'
-        extra = ""
-    return (
-        "You are a term life underwriter. The outcome is already decided and "
-        f"is {outcome}. Explain that outcome in one sentence using "
-        "consistency_flags, nondisclosure_findings, coverage_assessment, and "
-        "factors from the user JSON. Do not invent medical facts and do not "
-        f"choose a different outcome. Return JSON only: {shape}.{extra}"
-    )
+_OUTCOMES = ("approve", "refer", "deny")
+_RATE_CLASSES = ("standard", "surcharge")
 
 
 def pick_outcome(score: float) -> str:
@@ -31,6 +31,13 @@ def pick_outcome(score: float) -> str:
     if score <= 0.7:
         return "refer"
     return "deny"
+
+
+def _expected_rate_class(enrichment: dict[str, Any]) -> str:
+    assessment = enrichment.get("rate_assessment") or {}
+    if isinstance(assessment, dict) and assessment.get("surcharge") is True:
+        return "surcharge"
+    return "standard"
 
 
 def _checklist(raw: Any) -> list[str]:
@@ -44,33 +51,6 @@ def _checklist(raw: Any) -> list[str]:
     return items
 
 
-def _fallback_checklist(
-    applicant: dict[str, Any],
-    enrichment: dict[str, Any],
-    risk: dict[str, Any],
-) -> list[str]:
-    items: list[str] = []
-    for flag in applicant.get("consistency_flags") or []:
-        if isinstance(flag, dict):
-            issue = flag.get("issue")
-            if isinstance(issue, str) and issue.strip():
-                items.append(issue.strip())
-    for finding in enrichment.get("nondisclosure_findings") or []:
-        if isinstance(finding, dict) and isinstance(finding.get("evidence"), str):
-            suggests = finding.get("suggests") or "a condition"
-            items.append(f"Review {finding['evidence']} (suggests {suggests})")
-    coverage = enrichment.get("coverage_assessment") or {}
-    if isinstance(coverage, dict) and coverage.get("justified") is False:
-        reason = coverage.get("reason")
-        if isinstance(reason, str) and reason.strip():
-            items.append(reason.strip())
-    if not items:
-        for factor in risk.get("factors") or []:
-            if isinstance(factor, str) and factor.strip():
-                items.append(factor.strip())
-    return items[:5] or ["Review the application against the file."]
-
-
 def recommendation_agent(
     applicant: dict[str, Any],
     enrichment: dict[str, Any],
@@ -79,55 +59,55 @@ def recommendation_agent(
     case_id: str,
     llm: Any,
 ) -> dict[str, Any]:
-    score = float(risk["score"])
-    outcome = pick_outcome(score)
-    fallback = f"Score {score} mapped to {outcome} by threshold."
-    reason = fallback
-    checklist: list[str] | None = None
-    try:
-        content = llm.complete(
-            [
-                {"role": "system", "content": _system(outcome)},
-                {
-                    "role": "user",
-                    "content": json.dumps(
-                        {
-                            "outcome": outcome,
-                            "score": score,
-                            "factors": risk.get("factors") or [],
-                            "consistency_flags": applicant.get("consistency_flags") or [],
-                            "nondisclosure_findings": enrichment.get("nondisclosure_findings")
-                            or [],
-                            "coverage_assessment": enrichment.get("coverage_assessment") or {},
-                            "applicant": {
-                                "name": applicant.get("name"),
-                                "age": applicant.get("age"),
-                                "occupation": applicant.get("occupation"),
-                                "smoker": applicant.get("smoker"),
-                                "medical_conditions": applicant.get("medical_conditions") or [],
-                                "annual_income": applicant.get("annual_income"),
-                                "coverage_amount": applicant.get("coverage_amount"),
-                                "term_length_years": applicant.get("term_length_years"),
-                            },
-                        }
-                    ),
-                },
-            ],
-            agent="recommendation",
-        )
-        data = parse_json_object(content)
-        proposed = data.get("reason")
-        if not isinstance(proposed, str) or not proposed.strip():
-            raise ValueError("reason must be a non-empty string")
-        reason = proposed.strip()
-        if outcome == "refer":
-            checklist = _checklist(data.get("review_checklist"))
-    except Exception:  # noqa: BLE001 — keep code-picked outcome if the LLM reason fails
-        reason = fallback
-        checklist = None
-    decision: dict[str, Any] = {"outcome": outcome, "reason": reason}
+    driver = {
+        "name": applicant.get("name"),
+        "age": applicant.get("age"),
+        "zip_code": applicant.get("zip_code"),
+        "years_licensed": applicant.get("years_licensed"),
+        "vehicle_year": applicant.get("vehicle_year"),
+        "vehicle_make": applicant.get("vehicle_make"),
+        "vehicle_model": applicant.get("vehicle_model"),
+        "annual_mileage": applicant.get("annual_mileage"),
+        "coverage_level": applicant.get("coverage_level"),
+        "violations": applicant.get("violations") or [],
+        "accidents_disclosed": applicant.get("accidents_disclosed"),
+    }
+    if applicant.get("driving_record_text"):
+        driver["driving_record_text"] = applicant.get("driving_record_text")
+    content = llm.complete(
+        [
+            {"role": "system", "content": RECOMMENDATION_SYSTEM},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "risk": risk,
+                        "consistency_flags": applicant.get("consistency_flags") or [],
+                        "nondisclosure_findings": enrichment.get("nondisclosure_findings")
+                        or [],
+                        "rate_assessment": enrichment.get("rate_assessment") or {},
+                        "driver": driver,
+                    }
+                ),
+            },
+        ],
+        agent="recommendation",
+    )
+    data = parse_json_object(content)
+    outcome = data.get("outcome")
+    if outcome not in _OUTCOMES:
+        raise ValueError("outcome must be approve, refer, or deny")
+    reason = data.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError("reason must be a non-empty string")
+    decision: dict[str, Any] = {"outcome": outcome, "reason": reason.strip()}
+    if outcome == "approve":
+        rate_class = data.get("rate_class")
+        if rate_class not in _RATE_CLASSES:
+            raise ValueError("rate_class must be standard or surcharge")
+        if rate_class != _expected_rate_class(enrichment):
+            raise ValueError("rate_class does not match the rate assessment")
+        decision["rate_class"] = rate_class
     if outcome == "refer":
-        decision["review_checklist"] = checklist or _fallback_checklist(
-            applicant, enrichment, risk
-        )
+        decision["review_checklist"] = _checklist(data.get("review_checklist"))
     return decision

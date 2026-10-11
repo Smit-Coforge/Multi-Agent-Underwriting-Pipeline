@@ -1,22 +1,30 @@
 {
-  "prescription_history": [
-    {"drug": "lisinopril", "reason": "hypertension"}
-  ],
-  "recent_lab_results": {
-    "date": "2026-04-01",
-    "a1c": 5.8,
-    "systolic": 138,
-    "diastolic": 86,
-    "ldl": 108,
-    "flags": ["elevated blood pressure"]
+  "mvr": {
+    "violations": [
+      "speeding"
+    ],
+    "at_fault_accidents": 1,
+    "license_status": "valid"
   },
-  "verified_medical_history": {
-    "conditions": ["hypertension"],
-    "notes": "Hypertension is on file. No diabetes diagnosis."
+  "claims_history": {
+    "claims": [
+      {
+        "type": "collision",
+        "year": 2024,
+        "at_fault": true
+      }
+    ],
+    "notes": "One at-fault fender bender."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 6.41,
-    "existing_coverage_verified": 150000,
-    "notes": "Requested face amount is 6.4 times income. Existing coverage verified at 150000."
+  "vehicle_record": {
+    "year": 2018,
+    "make": "Chevrolet",
+    "model": "Malibu",
+    "garaging_zip": "85001"
+  },
+  "territory": {
+    "zip_code": "85001",
+    "risk_band": "low",
+    "notes": "Average claims zip."
   }
 }

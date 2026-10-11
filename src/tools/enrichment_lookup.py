@@ -7,10 +7,10 @@ from typing import Any
 ENRICH_DIR = Path(__file__).resolve().parents[2] / "data" / "enrichment"
 
 FIELDS = (
-    "prescription_history",
-    "recent_lab_results",
-    "verified_medical_history",
-    "financial_coverage_check",
+    "mvr",
+    "claims_history",
+    "vehicle_record",
+    "territory",
 )
 
 

@@ -1,13 +1,14 @@
 {
   "name": "Evan Brooks",
   "age": 36,
-  "gender": "male",
-  "occupation": "electrician",
-  "annual_income": 78000,
-  "coverage_amount": 500000,
-  "term_length_years": 20,
-  "smoker": false,
-  "medical_conditions": ["high blood pressure"],
-  "medical_conditions_text": "high BP, borderline sugar",
-  "existing_life_insurance": 150000
+  "zip_code": "85001",
+  "years_licensed": 14,
+  "vehicle_year": 2018,
+  "vehicle_make": "Chevrolet",
+  "vehicle_model": "Malibu",
+  "annual_mileage": 12000,
+  "coverage_level": "full",
+  "violations_disclosed": [],
+  "accidents_disclosed": 1,
+  "driving_record_text": "speeding ticket and a fender bender"
 }

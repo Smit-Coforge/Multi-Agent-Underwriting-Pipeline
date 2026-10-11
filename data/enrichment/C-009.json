@@ -1,22 +1,24 @@
 {
-  "prescription_history": [
-    {"drug": "metformin", "reason": "type 2 diabetes"}
-  ],
-  "recent_lab_results": {
-    "date": "2025-12-09",
-    "a1c": 7.0,
-    "systolic": 128,
-    "diastolic": 82,
-    "ldl": 118,
-    "flags": ["elevated a1c"]
+  "mvr": {
+    "violations": [
+      "speeding"
+    ],
+    "at_fault_accidents": 0,
+    "license_status": "valid"
   },
-  "verified_medical_history": {
-    "conditions": ["type 2 diabetes"],
-    "notes": "Type 2 diabetes is on file. The application lists no medical conditions."
+  "claims_history": {
+    "claims": [],
+    "notes": "No claims on file."
   },
-  "financial_coverage_check": {
-    "coverage_to_income": 5.11,
-    "existing_coverage_verified": 0,
-    "notes": "Requested face amount is about 5 times income."
+  "vehicle_record": {
+    "year": 2017,
+    "make": "Mazda",
+    "model": "3",
+    "garaging_zip": "75201"
+  },
+  "territory": {
+    "zip_code": "75201",
+    "risk_band": "low",
+    "notes": "Low-risk zip."
   }
 }

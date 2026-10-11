@@ -1,105 +1,178 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from src.llm import parse_json_object
+from src.state import SEVERE_VIOLATIONS, canonical_violation
 
 RISK_SYSTEM = (
-    "You are a term life underwriter. score, band, and factors are already "
-    "computed and must not be changed. Write one short underwriter note from "
-    'the file. Return JSON only: {"underwriter_note": "..."}. '
-    "Use only the user JSON. Do not invent labs or diagnoses."
+    "You are an auto insurance underwriter. Judge this driver and car as a whole. "
+    "Return JSON only: "
+    '{"score": 0.0, "band": "low", "factors": ["..."], "underwriter_note": "..."}. '
+    "score is from 0 to 1. band is low when score < 0.4, medium when "
+    "score <= 0.7, and high otherwise. factors is a non-empty list of short "
+    "strings for what actually matters on this file. underwriter_note is one "
+    "short sentence. Weigh age, years licensed, mileage, vehicle, territory, "
+    "violations, at-fault accidents, undisclosed record items, license status, "
+    "and the rate assessment together. A consistency flag is an example to "
+    "consider, not an automatic debit. A higher score can mean a higher price "
+    "or a decline. Use only the user JSON. Do not invent tickets or accidents. "
+    "Do not put dui in a factor unless the file shows a dui."
 )
 
-SEVERE = ("cad", "copd", "cancer", "stroke")
-_NOTE = "Score, band, and factors were computed in code."
+_DUI = re.compile(r"\bdui\b", re.IGNORECASE)
 
 
-def _conditions(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [str(item) for item in value]
+def _as_int(value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return 0
+    return value
 
 
-def compute_term_life_score(
+def _labels(*groups: Any) -> set[str]:
+    labels: set[str] = set()
+    for group in groups:
+        if not isinstance(group, list):
+            continue
+        for item in group:
+            if isinstance(item, dict):
+                item = item.get("suggests")
+            label = canonical_violation(item)
+            if label:
+                labels.add(label)
+    return labels
+
+
+def _violation_groups(applicant: dict[str, Any], enrichment: dict[str, Any]) -> set[str]:
+    mvr = enrichment.get("mvr") or {}
+    violations = mvr.get("violations") if isinstance(mvr, dict) else []
+    return _labels(
+        applicant.get("violations"),
+        applicant.get("violations_disclosed"),
+        violations,
+        enrichment.get("nondisclosure_findings"),
+    )
+
+
+def compute_auto_score(
     applicant: dict[str, Any],
     enrichment: dict[str, Any],
 ) -> tuple[float, str, list[str]]:
     score = 0.10
     factors: list[str] = []
+    labels = _violation_groups(applicant, enrichment)
+    counted = labels - {"at_fault_accident"}
 
-    if applicant.get("smoker"):
-        score += 0.30
-        factors.append("Current tobacco use")
+    age = _as_int(applicant.get("age"))
+    if age and age < 25:
+        score += 0.12
+        factors.append(f"Age {age} (under 25)")
 
-    age = int(applicant.get("age") or 0)
-    if age >= 55:
-        score += 0.16
-        factors.append(f"Age {age} (55+ mortality class)")
-    elif age >= 45:
+    years = _as_int(applicant.get("years_licensed"))
+    if years < 3:
+        score += 0.10
+        factors.append(f"{years} year(s) licensed")
+
+    mileage = _as_int(applicant.get("annual_mileage"))
+    if mileage >= 20_000:
         score += 0.08
-        factors.append(f"Age {age}")
+        factors.append(f"{mileage} miles a year")
 
-    disclosed = _conditions(applicant.get("medical_conditions"))
-    if disclosed:
-        score += min(0.08 * len(disclosed), 0.24)
-        factors.append(f"{len(disclosed)} disclosed medical condition(s)")
+    if counted:
+        score += min(0.08 * len(counted), 0.24)
+        factors.append(f"{len(counted)} violation(s) on the record")
+
+    if any(label in labels for label in SEVERE_VIOLATIONS):
+        score += 0.25
+        factors.append("Severe violation on record")
+
+    mvr = enrichment.get("mvr") or {}
+    accidents = _as_int(mvr.get("at_fault_accidents")) if isinstance(mvr, dict) else 0
+    if accidents >= 1:
+        score += 0.15
+        factors.append("At-fault accident on record")
+    if accidents >= 2:
+        score += 0.10
+        factors.append("Repeat at-fault accidents")
+
+    if isinstance(mvr, dict) and mvr.get("license_status") not in (None, "valid"):
+        score += 0.20
+        factors.append("License is not valid")
+
+    territory = enrichment.get("territory") or {}
+    band = territory.get("risk_band") if isinstance(territory, dict) else None
+    if band == "high":
+        score += 0.12
+        factors.append("High-risk territory")
+    elif band == "medium":
+        score += 0.05
+        factors.append("Medium-risk territory")
+
+    findings = enrichment.get("nondisclosure_findings") or []
+    if isinstance(findings, list) and findings:
+        score += 0.12
+        factors.append("Undisclosed driving record")
+
+    assessment = enrichment.get("rate_assessment") or {}
+    if isinstance(assessment, dict) and assessment.get("surcharge") is True:
+        score += 0.10
+        factors.append("Surcharge applies")
 
     flags = applicant.get("consistency_flags") or []
     if isinstance(flags, list) and flags:
         score += min(0.08 * len(flags), 0.16)
         factors.append(f"{len(flags)} consistency flag(s)")
 
-    verified = enrichment.get("verified_medical_history") or {}
-    verified_conditions = _conditions(verified.get("conditions"))
-    history = " ".join(disclosed + verified_conditions).lower()
-    if any(token in history for token in SEVERE):
-        score += 0.15
-        factors.append("Severe condition on file")
-
-    findings = enrichment.get("nondisclosure_findings") or []
-    if isinstance(findings, list) and findings:
-        score += 0.12
-        factors.append("Non-disclosure suggested by records")
-
-    labs = enrichment.get("recent_lab_results") or {}
-    lab_flags = _conditions(labs.get("flags"))
-    if lab_flags:
-        score += min(0.08 * len(lab_flags), 0.16)
-        factors.append(f"{len(lab_flags)} abnormal lab flag(s)")
-
-    prescriptions = enrichment.get("prescription_history") or []
-    if isinstance(prescriptions, list) and prescriptions:
-        score += min(0.04 * len(prescriptions), 0.12)
-        factors.append(f"{len(prescriptions)} current prescription(s)")
-
-    assessment = enrichment.get("coverage_assessment") or {}
-    if isinstance(assessment, dict) and assessment.get("justified") is False:
-        score += 0.18
-        factors.append("Coverage is not justified")
-
-    income = int(applicant.get("annual_income") or 0)
-    coverage = int(applicant.get("coverage_amount") or 0)
-    if income > 0:
-        ratio = coverage / income
-        if ratio > 15:
-            score += 0.20
-            factors.append(f"Face amount {ratio:.0f}x income")
-        elif ratio > 10:
-            score += 0.10
-            factors.append(f"Face amount {ratio:.0f}x income")
-
     score = min(1.0, max(0.0, round(score, 2)))
-    if score < 0.4:
-        band = "low"
-    elif score <= 0.7:
-        band = "medium"
-    else:
-        band = "high"
     if not factors:
-        factors.append("No extra mortality or financial debits")
-    return score, band, factors
+        factors.append("No extra driving or territory debits")
+    return score, band_for_score(score), factors
+
+
+def band_for_score(score: float) -> str:
+    if score < 0.4:
+        return "low"
+    if score <= 0.7:
+        return "medium"
+    return "high"
+
+
+def _file_has_dui(applicant: dict[str, Any], enrichment: dict[str, Any]) -> bool:
+    return "dui" in _violation_groups(applicant, enrichment)
+
+
+def _rejects_dui_when_absent(
+    applicant: dict[str, Any],
+    enrichment: dict[str, Any],
+    factors: list[str],
+) -> None:
+    if _file_has_dui(applicant, enrichment):
+        return
+    for factor in factors:
+        if _DUI.search(factor):
+            raise ValueError("factor mentions dui when the file has no dui")
+
+
+def _model_score(raw: Any) -> float:
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        raise ValueError("score must be a number")  # noqa: TRY004
+    score = float(raw)
+    if score < 0 or score > 1:
+        raise ValueError("score must be from 0 to 1")
+    return score
+
+
+def _model_factors(raw: Any) -> list[str]:
+    if not isinstance(raw, list) or not raw:
+        raise ValueError("factors must be a non-empty list")
+    factors: list[str] = []
+    for item in raw:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError("factors must be non-empty strings")
+        factors.append(item.strip())
+    return factors
 
 
 def risk_scoring_agent(
@@ -109,35 +182,31 @@ def risk_scoring_agent(
     case_id: str,
     llm: Any,
 ) -> dict[str, Any]:
-    score, band, factors = compute_term_life_score(applicant, enrichment)
     content = llm.complete(
         [
             {"role": "system", "content": RISK_SYSTEM},
             {
                 "role": "user",
                 "content": json.dumps(
-                    {
-                        "applicant": applicant,
-                        "enrichment": enrichment,
-                        "score": score,
-                        "band": band,
-                        "factors": factors,
-                    }
+                    {"applicant": applicant, "enrichment": enrichment}
                 ),
             },
         ],
         agent="risk",
     )
     data = parse_json_object(content)
-    # The model may echo a score or a factor list. Those keys are ignored.
+    score = _model_score(data.get("score"))
+    band = data.get("band")
+    if band != band_for_score(score):
+        raise ValueError("band does not match score")
     note = data.get("underwriter_note")
-    if isinstance(note, str) and note.strip():
-        underwriter_note = note.strip()
-    else:
-        underwriter_note = _NOTE
+    if not isinstance(note, str) or not note.strip():
+        raise ValueError("underwriter_note must be a non-empty string")
+    factors = _model_factors(data.get("factors"))
+    _rejects_dui_when_absent(applicant, enrichment, factors)
     return {
         "score": score,
         "band": band,
         "factors": factors,
-        "underwriter_note": underwriter_note,
+        "underwriter_note": note.strip(),
     }
