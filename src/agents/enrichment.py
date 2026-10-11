@@ -30,7 +30,7 @@ explanation is one sentence tying that evidence to the undisclosed violation.
 If undisclosed_violations is empty, nondisclosure_findings is an empty array.
 
 rate_assessment:
-surcharge is the JSON boolean surcharge_required, true or false, not a string. Do not recompute it.
+surcharge must be exactly the boolean surcharge_required. Copy it. Do not recompute it and do not write the other value.
 reason is one sentence about the price.
 A true surcharge means the policy can still be issued at a higher price. It is not by itself a decline."""
 

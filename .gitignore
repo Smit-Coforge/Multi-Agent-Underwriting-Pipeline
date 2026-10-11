@@ -228,3 +228,4 @@ __marimo__/
 # Local run reports (observability only)
 report/*
 !report/.gitkeep
+trace/*

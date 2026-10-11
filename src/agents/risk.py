@@ -9,17 +9,17 @@ from src.state import SEVERE_VIOLATIONS, canonical_violation
 
 RISK_SYSTEM = (
     "You are an auto insurance underwriter. Judge this driver and car as a whole. "
-    "Return JSON only: "
-    '{"score": 0.0, "band": "low", "factors": ["..."], "underwriter_note": "..."}. '
-    "score is from 0 to 1. band is low when score < 0.4, medium when "
-    "score <= 0.7, and high otherwise. factors is a non-empty list of short "
-    "strings for what actually matters on this file. underwriter_note is one "
-    "short sentence. Weigh age, years licensed, mileage, vehicle, territory, "
-    "violations, at-fault accidents, undisclosed record items, license status, "
-    "and the rate assessment together. A consistency flag is an example to "
-    "consider, not an automatic debit. A higher score can mean a higher price "
-    "or a decline. Use only the user JSON. Do not invent tickets or accidents. "
-    "Do not put dui in a factor unless the file shows a dui."
+    "Return JSON only, with exactly these keys: score, band, factors, underwriter_note. "
+    "score is a number from 0 to 1 that matches how serious this file is. "
+    "band is low when score < 0.4, medium when score <= 0.7, and high otherwise. "
+    "Do not default to a low score. The note and the factors must agree with the score. "
+    "factors is a non-empty list of short strings for facts that are actually on this file. "
+    "Do not name a violation the file does not contain. "
+    "underwriter_note is one short sentence. "
+    "Weigh age, years licensed, mileage, vehicle, territory, violations, "
+    "at-fault accidents, undisclosed record items, license status, and the rate assessment. "
+    "A consistency flag is an example to consider, not an automatic debit. "
+    "Use only the user JSON. Do not invent tickets or accidents."
 )
 
 _DUI = re.compile(r"\bdui\b", re.IGNORECASE)

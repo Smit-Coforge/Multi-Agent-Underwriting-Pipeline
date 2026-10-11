@@ -31,6 +31,13 @@ def _report(report_dir: Path, case_id: str) -> dict:
     return json.loads(files[0].read_text(encoding="utf-8"))
 
 
+def _trace(report_dir: Path, case_id: str) -> list:
+    report = _report(report_dir, case_id)
+    rows = json.loads(Path(report["trace_path"]).read_text(encoding="utf-8"))
+    assert isinstance(rows, list)
+    return rows
+
+
 def _load(folder: str, case_id: str) -> dict:
     return json.loads(Path(folder, f"{case_id}.json").read_text(encoding="utf-8"))
 
@@ -43,11 +50,13 @@ def test_low_risk_file_approves(tmp_path: Path) -> None:
     assert case["risk"]["factors"] == ["Model factor"]
     assert case["risk"]["underwriter_note"] == "Note from the model."
     report = _report(tmp_path, "C-001")
-    assert report["case"]["case_id"] == "C-001"
-    assert report["case"]["decision"]["outcome"] == "approve"
-    agents = [row["agent"] for row in report["trace"]]
+    assert "trace" not in report
+    assert report["case_id"] == "C-001"
+    assert report["decision"]["outcome"] == "approve"
+    rows = _trace(tmp_path, "C-001")
+    agents = [row["agent"] for row in rows]
     assert agents == ["intake", "enrichment", "risk", "recommendation"]
-    for row in report["trace"]:
+    for row in rows:
         assert "input" in row
         assert "output" in row
         assert "duration_ms" in row
@@ -56,8 +65,8 @@ def test_low_risk_file_approves(tmp_path: Path) -> None:
         assert row["cost_usd"] == 0
         assert row["status"] == "ok"
         assert row["retry"] == 0
-    totals = trace_totals(report["trace"])
-    assert totals["duration_ms"] == sum(row["duration_ms"] for row in report["trace"])
+    totals = trace_totals(rows)
+    assert totals["duration_ms"] == sum(row["duration_ms"] for row in rows)
     assert totals["prompt_tokens"] == 40
     assert totals["completion_tokens"] == 20
     assert totals["cost_usd"] == 0
@@ -145,7 +154,7 @@ def test_rejected_risk_reply_is_kept_on_the_trace(tmp_path: Path) -> None:
     assert case["decision"]["outcome"] == "refer"
     assert case["risk"] is None
     risk_errors = [
-        row for row in _report(tmp_path, "C-003")["trace"] if row["agent"] == "risk"
+        row for row in _trace(tmp_path, "C-003") if row["agent"] == "risk"
     ]
     assert [row["retry"] for row in risk_errors] == [0, 1, 2]
     for row in risk_errors:
@@ -170,7 +179,7 @@ def test_risk_timeout_retries_then_escalates(tmp_path: Path) -> None:
     assert "risk failed after 3 attempts" in case["decision"]["reason"]
     assert case["decision"]["review_checklist"]
     assert case["risk"] is None
-    rows = _report(tmp_path, "C-003")["trace"]
+    rows = _trace(tmp_path, "C-003")
     risk_errors = [row for row in rows if row["agent"] == "risk"]
     assert [row["retry"] for row in risk_errors] == [0, 1, 2]
     assert all(row["status"] == "error" for row in risk_errors)
@@ -189,7 +198,7 @@ def test_recommendation_timeout_retries_then_escalates(tmp_path: Path) -> None:
     assert case["decision"]["review_checklist"]
     assert case["risk"] is not None
     assert case["risk"]["factors"] == ["Model factor"]
-    rows = _report(tmp_path, "C-001")["trace"]
+    rows = _trace(tmp_path, "C-001")
     assert [row["agent"] for row in rows] == [
         "intake",
         "enrichment",
@@ -217,10 +226,14 @@ def test_each_run_writes_its_own_report(tmp_path: Path) -> None:
     assert len(files) == 2
     assert first["report_path"] != second["report_path"]
     saved = [json.loads(path.read_text(encoding="utf-8")) for path in files]
-    assert saved[0]["trace"] != []
-    assert saved[1]["trace"] != []
-    assert saved[0]["case"]["case_id"] == "C-001"
-    assert saved[1]["case"]["case_id"] == "C-001"
+    assert "trace" not in saved[0]
+    assert "trace" not in saved[1]
+    traces = [json.loads(Path(item["trace_path"]).read_text(encoding="utf-8")) for item in saved]
+    assert traces[0] != []
+    assert traces[1] != []
+    assert saved[0]["trace_path"] != saved[1]["trace_path"]
+    assert saved[0]["case_id"] == "C-001"
+    assert saved[1]["case_id"] == "C-001"
 
 
 def test_trace_totals_sum_sequential_rows() -> None:

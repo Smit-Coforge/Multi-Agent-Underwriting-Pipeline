@@ -24,7 +24,7 @@ Each run builds a fresh dict inside `run_pipeline()` and every agent reads from 
 | Read/write contracts | The node wrapper in `src/tracing.py` passes only allowed read keys and returns only the agent’s write key. |
 | Leakage test | `tests/test_no_leakage.py` runs case A then case B and asserts B contains none of A. |
 
-The file under `report/` is observability, not working memory. Agents never read it.
+The files under `report/` and `trace/` are observability, not working memory. Agents never read them. The report is the case. The trace is the step log, including each raw model reply.
 
 ### Case keys
 
@@ -76,10 +76,10 @@ The LLM proposes the labels, flags, findings, surcharge, score, band, factors, n
 
 | Agent | LLM proposes | Code raises unless |
 |---|---|---|
-| intake | Allowed violation labels from `violations_disclosed` and `driving_record_text`, and `consistency_flags`. The model's issue text is what gets stored. | Form fields are copied from the JSON. The label set matches the form (`speeding`, `red_light`, `dui`, `reckless`, `at_fault_accident`, `suspended_license`, `other`). A flag is kept only when its fields are real application fields and that check is true on the form. The checks are: `years_licensed > age - 16`; `age < 25` and `annual_mileage >= 20000`; `vehicle_year < 2010` and `coverage_level` is `full`; `accidents_disclosed > years_licensed`. A flag that fails its check or names an unknown field raises. A check the form meets that the model omitted raises. Required keys still have to be present. |
-| enrichment | `nondisclosure_findings` (`evidence_type` of `mvr`, plus evidence, suggests, and an explanation) and `rate_assessment` (`surcharge` plus a reason). | All four lookups are copied from the file. Evidence is a string on `mvr.violations`, or `at_fault_accidents` when that count is higher than `accidents_disclosed`. `suggests` is that same label. A finding for a violation already disclosed is dropped. The kept labels must be exactly the undisclosed ones. `surcharge` must match the record: high-risk zip, license not valid, 2 or more at-fault accidents, mileage 25000 or more, or a `dui`, `reckless`, or `suspended_license` on the application or the MVR. The reason must be non-empty. |
-| risk | `score`, `band`, `factors`, and `underwriter_note`. | `score` is between 0 and 1. `band` matches that score. `factors` is a non-empty list of non-empty strings. `underwriter_note` is a non-empty string. A file with no DUI has no factor that uses the word dui. |
-| recommendation | `outcome`, `reason`, `rate_class` on approve, and, on refer, `review_checklist`. | `outcome` is approve, refer, or deny. `reason` is non-empty. An approve uses `surcharge` when the rate assessment says so, and `standard` otherwise. A refer includes a non-empty `review_checklist`. |
+| intake | Allowed violation labels from `violations_disclosed` and `driving_record_text`, and `consistency_flags`. The model's issue text is what gets stored. | Form fields are copied from the JSON. The prompt includes `violations_required` and `checks_required`, which code already computed. The model copies those lists. The label set must match (`speeding`, `red_light`, `dui`, `reckless`, `at_fault_accident`, `suspended_license`, `other`). The checks are: `years_licensed > age - 16`; `age < 25` and `annual_mileage >= 20000`; `vehicle_year < 2010` and `coverage_level` is `full`; `accidents_disclosed > years_licensed`. A flag that fails its check or names an unknown field raises. A check the form meets that the model omitted raises. Required keys still have to be present. |
+| enrichment | `nondisclosure_findings` (`evidence_type` of `mvr`, plus evidence, suggests, and an explanation) and `rate_assessment` (`surcharge` plus a reason). | All four lookups are copied from the file. The prompt includes `undisclosed_violations` and `surcharge_required`. The model copies them. Evidence is a string on `mvr.violations`, or `at_fault_accidents` when that count is higher than `accidents_disclosed`. `suggests` is that same label. A finding for a violation already disclosed is dropped. `surcharge` must match the record: high-risk zip, license not valid, 2 or more at-fault accidents, mileage 25000 or more, or a `dui`, `reckless`, or `suspended_license` on the application or the MVR. The reason must be non-empty. |
+| risk | `score`, `band`, `factors`, and `underwriter_note`. | `score` is between 0 and 1. `band` matches that score. The prompt does not include a sample score. `factors` is a non-empty list of non-empty strings. `underwriter_note` is a non-empty string. A file with no DUI has no factor that uses the word dui. |
+| recommendation | `outcome`, `reason`, `rate_class` on approve, and, on refer, `review_checklist`. | `outcome` is approve, refer, or deny. `reason` is non-empty. The prompt includes `rate_class_required`. An approve must copy it: `surcharge` when the rate assessment says so, and `standard` otherwise. A refer includes a non-empty `review_checklist`. |
 
 ## How to run
 
@@ -96,7 +96,7 @@ Risk stores the model's score when it is between 0 and 1, the band matches that 
 
 If an agent raises (timeout, bad JSON, or a proposal that disagrees with the file), the wrapper retries 3 times then refers. Nothing is keyed off a special case id.
 
-Docker talks to host Ollama at `http://host.docker.internal:11434` (`OLLAMA_HOST` in `docker-compose.yml`). Each run writes `report/<case_id>/<timestamp>.json` (the case dict plus the step trace).
+Docker talks to host Ollama at `http://host.docker.internal:11434` (`OLLAMA_HOST` in `docker-compose.yml`). Each run writes `report/<case_id>/<timestamp>.json` for the case and `trace/<case_id>/<timestamp>.json` for the step log. The case records `trace_path`.
 
 ## Part 4
 

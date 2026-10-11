@@ -11,13 +11,12 @@ RECOMMENDATION_SYSTEM = (
     "refer when a person should look at something specific. deny when the file "
     "should not be issued. A bad record raises the price or is a decline. "
     "A consistency flag is an example to consider, not a rule that forces refer or deny. "
-    "On approve, include rate_class. Use surcharge when rate_assessment.surcharge "
-    "is true, and standard when it is false. refer and deny do not include rate_class. "
-    'Return JSON only. For approve: {"outcome": "approve", "reason": "...", '
-    '"rate_class": "standard"}. For deny: {"outcome": "deny", "reason": "..."}. '
-    "For refer, also include review_checklist, a short list of concrete items "
-    'for the human underwriter: {"outcome": "refer", "reason": "...", '
-    '"review_checklist": ["short item"]}. '
+    "Return JSON only. "
+    "approve has outcome, reason, and rate_class. "
+    "rate_class must be exactly rate_class_required. Do not choose a different class. "
+    "deny has outcome and reason, and no rate_class. "
+    "refer has outcome, reason, and review_checklist, a short list of concrete items "
+    "for the human underwriter, and no rate_class. "
     "reason is one sentence. Use only the user JSON. Do not invent tickets or accidents."
 )
 
@@ -86,6 +85,7 @@ def recommendation_agent(
                         "nondisclosure_findings": enrichment.get("nondisclosure_findings")
                         or [],
                         "rate_assessment": enrichment.get("rate_assessment") or {},
+                        "rate_class_required": _expected_rate_class(enrichment),
                         "driver": driver,
                     }
                 ),

@@ -1,12 +1,17 @@
 import pytest
 
-from src.agents.risk import compute_auto_score, risk_scoring_agent
+from src.agents.risk import RISK_SYSTEM, compute_auto_score, risk_scoring_agent
 from src.llm import FakeLLM
 from src.tools.enrichment_lookup import lookup_enrichment
 from tests.conftest import ALEX, JORDAN
 
 ENRICHMENT_ALEX = lookup_enrichment("C-001")
 ENRICHMENT_JORDAN = lookup_enrichment("C-002")
+
+
+def test_risk_prompt_does_not_show_a_sample_score() -> None:
+    assert "0.0" not in RISK_SYSTEM
+    assert '"band": "low"' not in RISK_SYSTEM
 
 
 def test_compute_score_low_risk_approvable() -> None:

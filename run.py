@@ -20,6 +20,7 @@ def main() -> None:
     outcome = str(decision.get("outcome", "?")).upper()
     print(f"  decision  {outcome}: {decision.get('reason', '')}")
     print(f"  report → {case['report_path']}")
+    print(f"  trace  → {case['trace_path']}")
 
 
 if __name__ == "__main__":

@@ -42,33 +42,25 @@ violations (array of strings) and consistency_flags (array of objects).
 Do not return name, age, zip, license years, vehicle, mileage, coverage, or accident count. Code copies those from the form.
 
 violations:
-Map every violation in violations_disclosed and driving_record_text onto this allowed list and no other labels:
+violations_required is the label list for this form. Do not recompute it.
+Return that list, each label once, and no other labels.
+Allowed labels are:
 {_LABELS}
-If nothing is disclosed, return an empty array.
-If a disclosed value is already one of those labels, keep that label.
-Also map these phrases:
-- speeding ticket or speed ticket -> speeding
-- red light -> red_light
-- DUI, DWI, or drunk driving -> dui
-- reckless -> reckless
-- fender bender, at-fault, or crash -> at_fault_accident
-- suspended or revoked license -> suspended_license
-Use other only when a violation is disclosed and none of the labels above fit.
-Do not invent a violation the form does not mention.
-Return each label once.
+If violations_required is empty, violations is an empty array.
 
 consistency_flags:
+checks_required is the list of checks that are already true. Do not recompute it.
+Emit one flag for each entry in checks_required, and no others.
+Each flag's fields array must equal that entry, in the same order.
 Each object has a fields array and an issue string.
 Every name in fields must be one of:
 {_FIELDS}
-A flag means the applicant's own facts disagree or need a second look. Say what you noticed in issue.
-violations_disclosed and driving_record_text are two places the applicant described the record. Mapping both into the label list is the task, not a conflict.
-The checks below are separate. Emit one flag for each check the form meets, and no flag for a check it does not meet.
+Say what you noticed in issue. Use the matching check below:
 1. years_licensed is greater than age - 16. Fields: age, years_licensed.
 2. age is under 25 and annual_mileage is 20000 or more. Fields: age, annual_mileage.
 3. vehicle_year is under 2010 and coverage_level is full. Fields: vehicle_year, coverage_level.
 4. accidents_disclosed is greater than years_licensed. Fields: accidents_disclosed, years_licensed.
-If none of those checks are true, consistency_flags is an empty array."""
+If checks_required is empty, consistency_flags is an empty array."""
 
 
 def _as_int(value: Any) -> int:
@@ -224,7 +216,16 @@ def intake_agent(raw_application: Any, *, case_id: str, llm: Any) -> dict[str, A
     content = llm.complete(
         [
             {"role": "system", "content": INTAKE_SYSTEM},
-            {"role": "user", "content": json.dumps(form)},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        **form,
+                        "violations_required": required_violations(form),
+                        "checks_required": required_flag_fields(form),
+                    }
+                ),
+            },
         ],
         agent="intake",
     )

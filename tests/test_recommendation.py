@@ -1,12 +1,41 @@
+import json
+
 import pytest
 
-from src.agents.recommendation import pick_outcome, recommendation_agent
+from src.agents.recommendation import RECOMMENDATION_SYSTEM, pick_outcome, recommendation_agent
 from src.llm import FakeLLM
 from src.tools.enrichment_lookup import lookup_enrichment
 from tests.conftest import ALEX
 
 ENRICHMENT = lookup_enrichment("C-001")
 RISK = {"score": 0.38, "band": "low", "factors": ["clean record"]}
+
+
+class _Capture(FakeLLM):
+    def complete(self, messages: list[dict[str, str]], *, agent: str) -> str:
+        self.messages = messages
+        return super().complete(messages, agent=agent)
+
+
+def test_recommendation_prompt_does_not_show_one_rate_class() -> None:
+    assert '"rate_class": "standard"' not in RECOMMENDATION_SYSTEM
+    assert '"rate_class": "surcharge"' not in RECOMMENDATION_SYSTEM
+
+
+def test_recommendation_tells_the_model_the_required_rate_class() -> None:
+    priced = {**ENRICHMENT, "rate_assessment": {"surcharge": True, "reason": "Record requires a higher price."}}
+    llm = _Capture(
+        {
+            "recommendation": {
+                "outcome": "approve",
+                "reason": "Issue at a higher price.",
+                "rate_class": "surcharge",
+            }
+        }
+    )
+    recommendation_agent(ALEX, priced, RISK, case_id="C-002", llm=llm)
+    payload = json.loads(llm.messages[1]["content"])
+    assert payload["rate_class_required"] == "surcharge"
 
 
 def test_pick_outcome_thresholds() -> None:

@@ -131,22 +131,31 @@ def run_pipeline(
     return case
 
 
+def _trace_root(report_dir: Path) -> Path:
+    """Traces sit next to report/, not inside the case file."""
+    if report_dir.name == "report":
+        return report_dir.parent / "trace"
+    return report_dir / "trace"
+
+
 def _write_run_report(
     report_dir: str | Path,
     case_id: str,
     case: dict[str, Any],
     log: list[dict[str, Any]],
 ) -> Path:
-    """One file per run. A later run of the same case does not replace this one."""
+    """One report and one trace per run. A later run does not replace either."""
     folder = Path(report_dir) / case_id
     folder.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     path = folder / f"{stamp}.json"
     if path.exists():
         path = folder / f"{stamp}-{time.time_ns()}.json"
+    trace_folder = _trace_root(Path(report_dir)) / case_id
+    trace_folder.mkdir(parents=True, exist_ok=True)
+    trace_path = trace_folder / path.name
     case["report_path"] = str(path)
-    path.write_text(
-        json.dumps({"case": case, "trace": log}, indent=2, default=str),
-        encoding="utf-8",
-    )
+    case["trace_path"] = str(trace_path)
+    path.write_text(json.dumps(case, indent=2, default=str), encoding="utf-8")
+    trace_path.write_text(json.dumps(log, indent=2, default=str), encoding="utf-8")
     return path
