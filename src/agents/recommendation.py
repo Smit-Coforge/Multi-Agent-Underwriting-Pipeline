@@ -1,3 +1,12 @@
+"""
+This module chooses an underwriting outcome for a finished file.
+
+Responsibilities:
+- Ask the model for approve, refer, or deny, plus a reason.
+- Require the rate class from the assessment on approve, and a review checklist on refer.
+- Reject an approve when the risk score is above 0.7, or any outcome but refer when a consistency flag requires review.
+"""
+
 from __future__ import annotations
 
 import json

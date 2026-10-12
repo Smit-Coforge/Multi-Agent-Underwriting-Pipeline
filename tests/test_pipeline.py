@@ -1,3 +1,12 @@
+"""
+This module tests a full underwriting run with a fake model.
+
+Responsibilities:
+- Run intake, enrichment, risk, and recommendation and check the decision.
+- Check that each run writes its own report and trace.
+- Check that a failing agent is retried and then referred.
+"""
+
 import json
 from pathlib import Path
 

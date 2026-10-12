@@ -1,3 +1,12 @@
+"""
+This module compares an applicant to outside driving records.
+
+Responsibilities:
+- Load the motor vehicle record, claims, vehicle record, and territory.
+- Ask the model for nondisclosure findings and a rate assessment.
+- Reject a finding or a surcharge flag that does not match the loaded record.
+"""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,12 @@
+"""
+This module standardizes a raw auto insurance application into an applicant record.
+
+Responsibilities:
+- Copy required form fields from the application JSON.
+- Ask the model for violation labels and consistency flags.
+- Reject labels and flags that do not match checks already computed from the form.
+"""
+
 from __future__ import annotations
 
 import json

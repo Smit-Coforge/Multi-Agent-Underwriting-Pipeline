@@ -1,3 +1,11 @@
+"""
+This module tests that one run does not leave data in the next.
+
+Responsibilities:
+- Run Alex Rivera and then Jordan Blake in the same process.
+- Check that Blake's case contains none of Rivera's data.
+"""
+
 from src.graph import run_pipeline
 from tests.conftest import ALEX, ALEX_RAW, JORDAN, JORDAN_RAW, fake_for
 

@@ -1,3 +1,12 @@
+"""
+This module wraps each agent so a run can be traced and retried.
+
+Responsibilities:
+- Pass an agent only the case keys its contract allows it to read.
+- Record duration, token counts, and a zero local cost for each attempt.
+- Retry a failing agent three times, then mark that agent as failed.
+"""
+
 from __future__ import annotations
 
 import time

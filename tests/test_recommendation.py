@@ -1,3 +1,12 @@
+"""
+This module tests the recommendation agent.
+
+Responsibilities:
+- Check that a valid approve, refer, or deny is stored with its reason.
+- Check that an approve carries the rate class the assessment requires.
+- Check that a high score cannot be approved and that a refer includes a checklist.
+"""
+
 import json
 
 import pytest

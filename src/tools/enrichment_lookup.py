@@ -1,3 +1,12 @@
+"""
+This module loads the outside record for one case.
+
+Responsibilities:
+- Read data/enrichment/<case_id>.json.
+- Require the motor vehicle record, claims, vehicle record, and territory.
+- Return only those four fields.
+"""
+
 from __future__ import annotations
 
 import json

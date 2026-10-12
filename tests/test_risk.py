@@ -1,3 +1,12 @@
+"""
+This module tests risk scoring.
+
+Responsibilities:
+- Check the score and band for a clean file and a severe file.
+- Check that a valid model score, band, factors, and note are stored.
+- Check that a bad score, band, or a DUI factor on a file with no DUI is rejected.
+"""
+
 import pytest
 
 from src.agents.risk import RISK_SYSTEM, compute_auto_score, risk_scoring_agent

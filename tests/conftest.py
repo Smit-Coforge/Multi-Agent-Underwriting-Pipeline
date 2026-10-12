@@ -1,3 +1,12 @@
+"""
+This module builds the shared applicants and canned model replies used by tests.
+
+Responsibilities:
+- Define the Alex Rivera, Jordan Blake, and Casey Morgan applications.
+- Build a FakeLLM whose replies match those applicants and their records.
+- Skip the retry wait so a failing agent does not sleep.
+"""
+
 from __future__ import annotations
 
 from typing import Any

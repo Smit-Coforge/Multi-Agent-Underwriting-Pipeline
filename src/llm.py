@@ -1,3 +1,12 @@
+"""
+This module talks to a language model and parses its JSON reply.
+
+Responsibilities:
+- Call a local Ollama model for a live run.
+- Return canned JSON replies from FakeLLM in tests.
+- Parse a reply into one JSON object.
+"""
+
 from __future__ import annotations
 
 import json

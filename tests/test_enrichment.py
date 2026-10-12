@@ -1,3 +1,12 @@
+"""
+This module tests the enrichment agent.
+
+Responsibilities:
+- Check that a finding cites evidence that is on the motor vehicle record.
+- Check that a disclosed violation is not kept as a finding.
+- Check that invented evidence or a missing undisclosed violation is rejected.
+"""
+
 import pytest
 
 from src.agents.enrichment import enrichment_agent

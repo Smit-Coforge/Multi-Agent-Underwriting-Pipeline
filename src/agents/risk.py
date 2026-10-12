@@ -1,3 +1,12 @@
+"""
+This module scores how serious an auto insurance file is.
+
+Responsibilities:
+- Ask the model for a score, band, factors, and an underwriter note.
+- Reject a score outside 0 to 1, a band that does not match that score, or empty text.
+- Reject a factor that names a DUI when the file has none.
+"""
+
 from __future__ import annotations
 
 import json

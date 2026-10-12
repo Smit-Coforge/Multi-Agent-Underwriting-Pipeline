@@ -1,3 +1,12 @@
+"""
+This module wires the four agents into one sequential underwriting run.
+
+Responsibilities:
+- Build the graph from intake through enrichment, risk, and recommendation.
+- Refer the case when an agent still fails after three attempts.
+- Write one report and one trace for the finished run.
+"""
+
 from __future__ import annotations
 
 import json

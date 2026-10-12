@@ -1,3 +1,12 @@
+"""
+This module runs one auto insurance case through the underwriting pipeline.
+
+Responsibilities:
+- Load an application JSON file by case id.
+- Call the pipeline with a live Ollama model.
+- Print the decision and the paths of the written report and trace.
+"""
+
 from __future__ import annotations
 
 import argparse

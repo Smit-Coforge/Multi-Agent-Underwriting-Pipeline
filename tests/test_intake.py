@@ -1,3 +1,12 @@
+"""
+This module tests the intake agent.
+
+Responsibilities:
+- Check that form fields are copied from the application.
+- Check that free text becomes allowed violation labels and that true checks become flags.
+- Check that an unknown label, an unknown field, or a missed check is rejected.
+"""
+
 import json
 
 import pytest

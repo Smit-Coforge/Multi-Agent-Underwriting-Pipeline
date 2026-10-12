@@ -1,3 +1,12 @@
+"""
+This module defines the shared case file each agent reads and writes.
+
+Responsibilities:
+- Name the violation labels the models may propose.
+- Declare each agent's read keys and its one write key.
+- Build a fresh case dict for one run.
+"""
+
 from typing import Any, TypedDict
 
 # Labels the intake and enrichment models may propose. Code rejects anything else.

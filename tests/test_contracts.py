@@ -1,3 +1,11 @@
+"""
+This module tests the read and write contracts around each agent.
+
+Responsibilities:
+- Call the intake wrapper with a function that also returns decision and risk.
+- Check that only the applicant key is written back onto the case.
+"""
+
 from src.state import new_case
 from src.tracing import wrap
 from tests.conftest import ALEX, ALEX_RAW, fake_for
