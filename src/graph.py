@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -147,7 +147,7 @@ def _write_run_report(
     """One report and one trace per run. A later run does not replace either."""
     folder = Path(report_dir) / case_id
     folder.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     path = folder / f"{stamp}.json"
     if path.exists():
         path = folder / f"{stamp}-{time.time_ns()}.json"

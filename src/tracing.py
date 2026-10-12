@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.state import CONTRACTS, CaseState
@@ -55,7 +55,7 @@ def wrap(name: str, fn: AgentFn, llm: Any, log: list[dict[str, Any]]) -> Any:
         case_id = case["case_id"]
         llm.last_usage = {"prompt_tokens": 0, "completion_tokens": 0}
         for attempt in range(3):
-            started_at = datetime.now(timezone.utc).isoformat()
+            started_at = datetime.now(UTC).isoformat()
             t0 = time.perf_counter()
             llm.last_content = None
             try:
