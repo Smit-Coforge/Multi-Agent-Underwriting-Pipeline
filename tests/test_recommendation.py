@@ -35,6 +35,7 @@ def test_recommendation_tells_the_model_the_required_rate_class() -> None:
     )
     recommendation_agent(ALEX, priced, RISK, case_id="C-002", llm=llm)
     payload = json.loads(llm.messages[1]["content"])
+    assert payload["referral_required"] is False
     assert payload["rate_class_required"] == "surcharge"
 
 
@@ -75,6 +76,113 @@ def test_recommendation_stores_an_outcome_the_score_alone_would_not_pick() -> No
     assert out["outcome"] == "deny"
     assert out["reason"] == "The file as a whole is not acceptable."
     assert "review_checklist" not in out
+
+
+def test_recommendation_rejects_approve_when_the_score_is_high() -> None:
+    llm = FakeLLM(
+        {
+            "recommendation": {
+                "outcome": "approve",
+                "reason": "The risk score is low.",
+                "rate_class": "standard",
+            }
+        }
+    )
+    risk = {"score": 0.8, "band": "high", "factors": ["years licensed exceeds age"]}
+    with pytest.raises(ValueError, match="cannot approve a high risk score"):
+        recommendation_agent(ALEX, ENRICHMENT, risk, case_id="C-008", llm=llm)
+
+
+def test_consistency_flags_require_refer() -> None:
+    flagged = {
+        **ALEX,
+        "violations": ["speeding"],
+        "consistency_flags": [
+            {
+                "fields": ["age", "years_licensed"],
+                "issue": "years_licensed is greater than age - 16",
+            }
+        ],
+    }
+    approved = FakeLLM(
+        {
+            "recommendation": {
+                "outcome": "approve",
+                "reason": "No severe violations.",
+                "rate_class": "standard",
+            }
+        }
+    )
+    with pytest.raises(ValueError, match="consistency flags require refer"):
+        recommendation_agent(flagged, ENRICHMENT, RISK, case_id="C-011", llm=approved)
+    referred = FakeLLM(
+        {
+            "recommendation": {
+                "outcome": "refer",
+                "reason": "A person should confirm the license date.",
+                "review_checklist": ["Confirm years licensed against age"],
+            }
+        }
+    )
+    out = recommendation_agent(flagged, ENRICHMENT, RISK, case_id="C-011", llm=referred)
+    assert out["outcome"] == "refer"
+
+
+def test_severe_violation_can_still_be_denied_when_flagged() -> None:
+    flagged = {
+        **ALEX,
+        "violations": ["dui"],
+        "consistency_flags": [
+            {
+                "fields": ["age", "years_licensed"],
+                "issue": "years_licensed is greater than age - 16",
+            }
+        ],
+    }
+    llm = FakeLLM(
+        {
+            "recommendation": {
+                "outcome": "deny",
+                "reason": "The file has a DUI and should not be issued.",
+            }
+        }
+    )
+    out = recommendation_agent(flagged, ENRICHMENT, RISK, case_id="C-002", llm=llm)
+    assert out["outcome"] == "deny"
+
+
+def test_reason_cannot_call_a_mid_score_above_the_cutoff() -> None:
+    llm = FakeLLM(
+        {
+            "recommendation": {
+                "outcome": "refer",
+                "reason": (
+                    "The driver's risk score is 0.5, which is above the 0.7 threshold "
+                    "for approval, so a review is required."
+                ),
+                "review_checklist": ["Confirm the license date"],
+            }
+        }
+    )
+    risk = {"score": 0.5, "band": "medium", "factors": ["mileage"]}
+    with pytest.raises(ValueError, match="reason contradicts the risk score"):
+        recommendation_agent(ALEX, ENRICHMENT, risk, case_id="C-011", llm=llm)
+
+
+def test_recommendation_may_refer_a_high_score() -> None:
+    llm = FakeLLM(
+        {
+            "recommendation": {
+                "outcome": "refer",
+                "reason": "A person should review the age and years licensed.",
+                "review_checklist": ["Confirm years licensed against age"],
+            }
+        }
+    )
+    risk = {"score": 0.8, "band": "high", "factors": ["years licensed exceeds age"]}
+    out = recommendation_agent(ALEX, ENRICHMENT, risk, case_id="C-008", llm=llm)
+    assert out["outcome"] == "refer"
+    assert out["review_checklist"] == ["Confirm years licensed against age"]
 
 
 def test_approve_rate_class_must_match_the_assessment() -> None:

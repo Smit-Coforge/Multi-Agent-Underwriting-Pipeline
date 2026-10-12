@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from src.llm import parse_json_object
+from src.state import SEVERE_VIOLATIONS, canonical_violation
 
 RECOMMENDATION_SYSTEM = (
     "You are an auto insurance underwriter. Choose the outcome from the whole file, "
-    "not from a score cutoff. approve when the driver and car can be issued. "
-    "refer when a person should look at something specific. deny when the file "
-    "should not be issued. A bad record raises the price or is a decline. "
-    "A consistency flag is an example to consider, not a rule that forces refer or deny. "
+    "not from a score cutoff. Read the driver, the risk note, consistency flags, "
+    "nondisclosure findings, and the rate assessment. "
+    "approve when the driver and car can be issued. "
+    "deny when the file should not be issued. "
+    "refer when a person should look at something specific. "
+    "When referral_required is true, outcome must be refer. "
+    "That means the file has a consistency flag and no severe violation, "
+    "so a person has to check that flag. Put the flag on the review checklist. "
+    "Do not approve a file whose risk score is above 0.7. Choose refer or deny for that file. "
+    "The reason must agree with the risk score. Do not call a high score low. "
+    "Do not say a score of 0.7 or below is above 0.7. Explain the file, not the cutoff. "
     "Return JSON only. "
     "approve has outcome, reason, and rate_class. "
     "rate_class must be exactly rate_class_required. Do not choose a different class. "
@@ -22,6 +31,7 @@ RECOMMENDATION_SYSTEM = (
 
 _OUTCOMES = ("approve", "refer", "deny")
 _RATE_CLASSES = ("standard", "surcharge")
+_CLAIMS_ABOVE_CUTOFF = re.compile(r"above (?:the )?0\.7|higher than (?:the )?0\.7|over (?:the )?0\.7")
 
 
 def pick_outcome(score: float) -> str:
@@ -30,6 +40,29 @@ def pick_outcome(score: float) -> str:
     if score <= 0.7:
         return "refer"
     return "deny"
+
+
+def _risk_score(risk: dict[str, Any]) -> float:
+    score = risk.get("score")
+    if isinstance(score, bool) or not isinstance(score, (int, float)):
+        raise ValueError("risk score must be a number")
+    return float(score)
+
+
+def _labels(values: Any) -> set[str]:
+    if not isinstance(values, list):
+        return set()
+    return {label for item in values if (label := canonical_violation(item))}
+
+
+def _referral_required(applicant: dict[str, Any], enrichment: dict[str, Any]) -> bool:
+    flags = applicant.get("consistency_flags") or []
+    if not isinstance(flags, list) or not flags:
+        return False
+    mvr = enrichment.get("mvr") or {}
+    on_file = mvr.get("violations") if isinstance(mvr, dict) else []
+    labels = _labels(applicant.get("violations")) | _labels(on_file)
+    return not any(label in labels for label in SEVERE_VIOLATIONS)
 
 
 def _expected_rate_class(enrichment: dict[str, Any]) -> str:
@@ -73,6 +106,7 @@ def recommendation_agent(
     }
     if applicant.get("driving_record_text"):
         driver["driving_record_text"] = applicant.get("driving_record_text")
+    referral_required = _referral_required(applicant, enrichment)
     content = llm.complete(
         [
             {"role": "system", "content": RECOMMENDATION_SYSTEM},
@@ -85,6 +119,7 @@ def recommendation_agent(
                         "nondisclosure_findings": enrichment.get("nondisclosure_findings")
                         or [],
                         "rate_assessment": enrichment.get("rate_assessment") or {},
+                        "referral_required": referral_required,
                         "rate_class_required": _expected_rate_class(enrichment),
                         "driver": driver,
                     }
@@ -97,9 +132,15 @@ def recommendation_agent(
     outcome = data.get("outcome")
     if outcome not in _OUTCOMES:
         raise ValueError("outcome must be approve, refer, or deny")
+    if outcome == "approve" and _risk_score(risk) > 0.7:
+        raise ValueError("cannot approve a high risk score")
+    if referral_required and outcome != "refer":
+        raise ValueError("consistency flags require refer")
     reason = data.get("reason")
     if not isinstance(reason, str) or not reason.strip():
         raise ValueError("reason must be a non-empty string")
+    if _risk_score(risk) <= 0.7 and _CLAIMS_ABOVE_CUTOFF.search(reason.casefold()):
+        raise ValueError("reason contradicts the risk score")
     decision: dict[str, Any] = {"outcome": outcome, "reason": reason.strip()}
     if outcome == "approve":
         rate_class = data.get("rate_class")
