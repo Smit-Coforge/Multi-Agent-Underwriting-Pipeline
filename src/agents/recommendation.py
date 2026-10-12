@@ -45,7 +45,7 @@ def pick_outcome(score: float) -> str:
 def _risk_score(risk: dict[str, Any]) -> float:
     score = risk.get("score")
     if isinstance(score, bool) or not isinstance(score, (int, float)):
-        raise ValueError("risk score must be a number")
+        raise ValueError("risk score must be a number")  # noqa: TRY004
     return float(score)
 
 

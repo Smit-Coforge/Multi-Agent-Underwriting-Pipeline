@@ -2,7 +2,11 @@ import json
 
 import pytest
 
-from src.agents.recommendation import RECOMMENDATION_SYSTEM, pick_outcome, recommendation_agent
+from src.agents.recommendation import (
+    RECOMMENDATION_SYSTEM,
+    pick_outcome,
+    recommendation_agent,
+)
 from src.llm import FakeLLM
 from src.tools.enrichment_lookup import lookup_enrichment
 from tests.conftest import ALEX
